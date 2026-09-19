@@ -9,9 +9,11 @@ type Props = {
   scroll?: boolean;
   // Which screen edges need safe-area padding. Screens under a native header only need the bottom.
   edges?: Edge[];
+  // Always-visible content below the scrolling area, for example a Save button.
+  footer?: ReactNode;
 };
 
-export function Screen({ children, scroll = true, edges = ['bottom'] }: Props) {
+export function Screen({ children, scroll = true, edges = ['bottom'], footer }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       <KeyboardAvoidingView
@@ -25,6 +27,7 @@ export function Screen({ children, scroll = true, edges = ['bottom'] }: Props) {
         ) : (
           <View style={[styles.content, styles.flex]}>{children}</View>
         )}
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -34,4 +37,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   content: { padding: spacing.md, gap: spacing.md },
+  footer: {
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+  },
 });

@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -103,7 +103,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <Screen>
+    <Screen footer={<Button title={strings.common.save} onPress={save} loading={busy} />}>
       <Stack.Screen
         options={{
           headerLeft: () => (
@@ -111,14 +111,6 @@ export default function EditProfileScreen() {
               <Text style={styles.headerButton}>{strings.common.cancel}</Text>
             </Pressable>
           ),
-          headerRight: () =>
-            busy ? (
-              <ActivityIndicator />
-            ) : (
-              <Pressable onPress={save} hitSlop={8}>
-                <Text style={[styles.headerButton, styles.headerSave]}>{strings.common.save}</Text>
-              </Pressable>
-            ),
         }}
       />
       <ErrorText message={error} />
@@ -177,7 +169,6 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   headerButton: { fontSize: 17, color: colors.primary },
-  headerSave: { fontWeight: '600' },
   photo: { alignItems: 'center', gap: spacing.sm },
   photoButtons: { flexDirection: 'row', gap: spacing.sm },
 });
