@@ -31,5 +31,3 @@ create policy "participants send messages"
     )
   );
 
--- Remove the test row left by the check that found this bug.
-delete from public.messages where kind = 'correction' and body = 'probe A';

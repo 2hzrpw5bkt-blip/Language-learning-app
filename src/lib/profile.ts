@@ -37,38 +37,34 @@ export async function saveProfile(userId: string, patch: ProfilePatch): Promise<
   if (inserted.error) throw inserted.error;
 }
 
-// Replaces the user's whole language list with the given choices.
+// Replaces the user's whole language list in one database transaction.
 export async function saveUserLanguages(
-  userId: string,
+  _userId: string,
   teach: TeachChoices,
   learn: LearnChoices,
 ): Promise<void> {
   const rows = [
     ...Object.entries(teach).map(([code, { native }]) => ({
-      user_id: userId,
       language_code: code,
       kind: native ? 'native' : 'fluent',
       level: null,
     })),
-    ...Object.entries(learn).map(([code, level]) => ({
-      user_id: userId,
-      language_code: code,
-      kind: 'learning',
-      level,
-    })),
+    ...Object.entries(learn).map(([code, level]) => ({ language_code: code, kind: 'learning', level })),
   ];
-  const removed = await supabase.from('user_languages').delete().eq('user_id', userId);
-  if (removed.error) throw removed.error;
-  if (rows.length === 0) return;
-  const inserted = await supabase.from('user_languages').insert(rows);
-  if (inserted.error) throw inserted.error;
+  const { error } = await supabase.rpc('set_user_languages', { p_rows: rows });
+  if (error) throw error;
 }
 
-export async function touchLastActive(userId: string): Promise<void> {
-  await supabase
-    .from('profiles')
-    .update({ last_active_at: new Date().toISOString() })
-    .eq('id', userId);
+// True if the text contains a word from the banned list (same check the server applies).
+export async function containsBannedWords(text: string): Promise<boolean> {
+  if (text.trim().length === 0) return false;
+  const { data, error } = await supabase.rpc('contains_banned_words', { txt: text });
+  if (error) return false;
+  return data === true;
+}
+
+export async function touchLastActive(): Promise<void> {
+  await supabase.rpc('touch_last_active');
 }
 
 // Permanently deletes the signed-in user. The SQL function deletes the auth user, which

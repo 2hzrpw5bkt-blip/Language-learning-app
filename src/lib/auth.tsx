@@ -12,6 +12,9 @@ type AuthContextValue = {
   userLanguages: UserLanguage[];
   languages: Language[];
   loading: boolean;
+  // True when the profile could not be loaded (offline, server down). Use retry().
+  loadFailed: boolean;
+  retry: () => void;
   refreshProfile: () => Promise<void>;
 };
 
@@ -19,15 +22,18 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const EMPTY: ProfileData = { profile: null, languages: [] };
 
-async function loadProfileData(userId: string | null): Promise<ProfileData> {
-  if (!userId) return EMPTY;
+type LoadResult = ProfileData & { failed: boolean };
+
+async function loadProfileData(userId: string | null): Promise<LoadResult> {
+  if (!userId) return { ...EMPTY, failed: false };
   try {
     const data = await fetchProfile(userId);
-    if (data.profile) touchLastActive(userId);
-    return data;
+    if (data.profile) touchLastActive();
+    return { ...data, failed: false };
   } catch (error) {
     console.warn('Could not load profile', error);
-    return EMPTY;
+    // Never treat a network failure as "new user": that would send them back through onboarding.
+    return { ...EMPTY, failed: true };
   }
 }
 
@@ -38,6 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Which user the current profileData belongs to. `undefined` means nothing loaded yet.
   const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
   const [languages, setLanguages] = useState<Language[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -71,15 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!sessionLoaded) return;
     let cancelled = false;
-    loadProfileData(userId).then((data) => {
+    loadProfileData(userId).then(({ failed, ...data }) => {
       if (cancelled) return;
       setProfileData(data);
+      setLoadFailed(failed);
       setLoadedFor(userId);
     });
     return () => {
       cancelled = true;
     };
-  }, [userId, sessionLoaded]);
+  }, [userId, sessionLoaded, attempt]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   const refreshProfile = useCallback(async () => {
     if (!userId) return;
@@ -92,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userLanguages: profileData.languages,
     languages,
     loading: !sessionLoaded || loadedFor !== userId,
+    loadFailed,
+    retry,
     refreshProfile,
   };
 

@@ -22,7 +22,7 @@ export function LanguageSummary({ title, rows, languages }: Props) {
         <View key={row.language_code} style={styles.line}>
           <Body>{nameOf(row.language_code)}</Body>
           {row.kind === 'native' ? <Text style={styles.tag}>{strings.profile.nativeTag}</Text> : null}
-          {row.level ? <Text style={styles.tag}>{row.level}</Text> : null}
+          {row.level ? <Text style={styles.tag}>{strings.levels[row.level].title}</Text> : null}
         </View>
       ))}
     </View>

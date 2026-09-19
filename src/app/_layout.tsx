@@ -2,6 +2,9 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { Button } from '@/components/button';
+import { Screen } from '@/components/screen';
+import { Body, Title } from '@/components/typography';
 import { strings } from '@/constants/strings';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { ChatProvider } from '@/lib/chat-context';
@@ -22,13 +25,23 @@ export default function RootLayout() {
 // Route groups are guarded by auth state. Expo Router redirects away from a group
 // the moment its guard turns false (for example right after sign-out).
 function RootStack() {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, loadFailed, retry } = useAuth();
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();
   }, [loading]);
 
   if (loading) return null;
+
+  if (session && loadFailed) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <Title>{strings.errors.loadFailedTitle}</Title>
+        <Body>{strings.errors.loadFailedBody}</Body>
+        <Button title={strings.common.retry} onPress={retry} />
+      </Screen>
+    );
+  }
 
   const signedIn = session !== null;
   const banned = profile?.is_banned === true;

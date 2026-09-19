@@ -39,12 +39,10 @@ export default function ReportScreen() {
     setBusy(true);
     try {
       await submitReport({
-        reporterId: session.user.id,
         reportedUserId: userId,
         reason,
         details,
         messageId: messageId ? Number(messageId) : undefined,
-        messageBody,
       });
       if (alsoBlock) {
         await blockUser(session.user.id, userId);

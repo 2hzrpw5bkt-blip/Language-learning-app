@@ -9,7 +9,7 @@ export const termsParagraphs: string[] = [
 ];
 
 export const privacyParagraphs: string[] = [
-  'We store the information you give us: your email, display name, bio, languages, timezone and optional photo.',
+  'We store the information you give us: your email, display name, bio, languages, timezone and chosen avatar colour.',
   'Messages you send are stored so your partner can read them and so reported messages can be reviewed. They are not sold or used for advertising.',
   'Voice calls are not recorded.',
   'Your data is stored with our hosting provider (Supabase) in the EU and protected in transit and at rest.',

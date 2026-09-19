@@ -11,6 +11,9 @@ import { strings } from '@/constants/strings';
 import { colors } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
+// Bump when the Terms or Privacy Policy text changes, so we know what each user accepted.
+const TERMS_VERSION = '2026-09-draft';
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignUpScreen() {
@@ -42,7 +45,7 @@ export default function SignUpScreen() {
       password,
       options: {
         // Recorded on the user so we can show when consent was given.
-        data: { age_confirmed: true, terms_accepted_at: new Date().toISOString() },
+        data: { age_confirmed: true, terms_accepted_at: new Date().toISOString(), terms_version: TERMS_VERSION },
       },
     });
     setBusy(false);

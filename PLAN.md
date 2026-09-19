@@ -102,7 +102,8 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 
 ### Phase 2 — Find a partner
 - Browse people who speak fluently a language I'm learning AND are learning a language I speak
-  fluently. Sort by recently active. Filter by language and level.
+  fluently. Sort by recently active. One filter: "Looking for people who speak" (their level is
+  shown on the profile instead of a level filter).
 - Profile view with "Say hi" button. No algorithm in v1.
 - **Done when:** account A sees account B and not people with non-matching languages.
 
@@ -111,13 +112,16 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 - **Block** (hides both ways, stops messages) and **Report** (user or message, with reason).
 - Row Level Security on every table: users can only read conversations they belong to.
 - Rate limit on new conversations per day (anti-spam).
-- Review reports in the Supabase dashboard at first; `is_banned` flag locks an account out.
+- Review reports in the Supabase dashboard at first; `is_banned` flag locks an account out and
+  remembers the email so the person cannot simply re-register.
 - **Done when:** iPhone and Simulator chat live; blocking works; a report lands in the reports table.
 
 ### Phase 4 — Conversation helpers (the differentiator)
 - Topic prompt cards by level ("Describe your morning routine").
-- Language-switch timer: "15 min in Finnish, then 15 min in Spanish".
-- Corrections: long-press a partner's message → suggest a corrected version, shown inline.
+- Language-switch timer: fixed 5 minutes per language, alternating until stopped. Both people
+  must accept to start it and to stop it (request/accept in the chat).
+- Corrections: long-press a partner's message → suggest a corrected version, shown inside the
+  original bubble with the changed words highlighted.
 - **Done when:** all three work inside a chat.
 
 ### Phase 5 — Voice calls
@@ -151,6 +155,10 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 - Open TestFlight to the waitlist first (see section 4), fix what breaks, then go public.
 - Watch: signups per language, % who send a first message, % who get a reply, reports.
 
+### Open decision before launch
+- Account deletion currently removes the person's messages from their partners' chats too
+  (cascade). Alternative: keep messages attributed to "Deleted user". Decide in Phase 7.
+
 ### Later
 - Android release, native call ringing (CallKit), translated UI, more languages, Apple/Google sign-in.
 
@@ -179,9 +187,11 @@ There is no community yet, and an empty exchange app is useless, so this matters
 - `languages` — code, name (seeded with the 8 launch languages)
 - `user_languages` — user_id, language_code, kind (`native` | `fluent` | `learning`), level (`beginner` | `intermediate` | `advanced`, learning only)
 - `conversations` — id, user_a, user_b, created_at, last_message_at
-- `messages` — id, conversation_id, sender_id, body, corrected_from_message_id, created_at
+- `messages` — id, conversation_id, sender_id, body, kind (text | topic | timer | correction), meta,
+  corrected_from_message_id, created_at
 - `blocks` — blocker_id, blocked_id
-- `reports` — id, reporter_id, reported_user_id, message_id?, call_session_id?, reason, status
+- `reports` — id, reporter_id, reported_user_id (kept as a snapshot after deletion), message_id?,
+  message_body (copied by the server), call_session_id?, reason, status
 - `call_sessions` — id, conversation_id, started_by, started_at, ended_at, livekit_room
 - `push_tokens` — user_id, expo_token, platform
 

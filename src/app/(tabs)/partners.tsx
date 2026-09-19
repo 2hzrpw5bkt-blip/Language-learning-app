@@ -31,9 +31,13 @@ export default function PartnersScreen() {
   // Bumped to reload with the same filters (pull to refresh, coming back to the tab).
   const [reloadKey, setReloadKey] = useState(0);
 
+  // If the chosen language was removed from the profile, fall back to "any".
+  const practising = userLanguages.filter((row) => row.kind === 'learning').map((row) => row.language_code);
+  const effectiveLanguage = language && practising.includes(language) ? language : null;
+
   useEffect(() => {
     let cancelled = false;
-    load({ language, level: null }).then((next) => {
+    load({ language: effectiveLanguage, level: null }).then((next) => {
       if (!cancelled) {
         setResult(next);
         setRefreshing(false);
@@ -42,7 +46,7 @@ export default function PartnersScreen() {
     return () => {
       cancelled = true;
     };
-  }, [language, reloadKey]);
+  }, [effectiveLanguage, reloadKey]);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,7 +90,7 @@ export default function PartnersScreen() {
             <Muted style={styles.filterLabel}>{strings.partners.languageFilterLabel}</Muted>
             <Chips
               options={languageOptions}
-              value={language}
+              value={effectiveLanguage}
               onChange={setLanguage}
               accessibilityLabel={strings.partners.languageFilterLabel}
             />

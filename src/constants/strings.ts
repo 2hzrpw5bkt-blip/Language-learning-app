@@ -230,5 +230,8 @@ export const strings = {
   errors: {
     generic: 'Something went wrong. Please try again.',
     bannedWords: 'That text contains words that are not allowed here. Please change it.',
+    rateLimited: 'You are sending messages very fast. Take a short break.',
+    loadFailedTitle: 'Could not connect',
+    loadFailedBody: 'Your profile could not be loaded. Check your connection and try again.',
   },
 } as const;

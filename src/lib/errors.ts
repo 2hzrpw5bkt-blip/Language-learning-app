@@ -4,6 +4,8 @@ import { strings } from '@/constants/strings';
 export function errorMessage(caught: unknown): string {
   const raw = rawMessage(caught);
   if (raw.includes('BANNED_WORDS')) return strings.errors.bannedWords;
+  if (raw.includes('RATE_LIMITED')) return strings.errors.rateLimited;
+  if (raw.includes('ACCOUNT_SUSPENDED')) return strings.banned.body;
   return raw;
 }
 

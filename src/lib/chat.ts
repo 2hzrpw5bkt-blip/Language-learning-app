@@ -121,7 +121,9 @@ export function subscribeToMessages(onInsert: (message: Message) => void, conver
 }
 
 export async function blockUser(blockerId: string, blockedId: string): Promise<void> {
-  const { error } = await supabase.from('blocks').upsert({ blocker_id: blockerId, blocked_id: blockedId });
+  const { error } = await supabase
+    .from('blocks')
+    .upsert({ blocker_id: blockerId, blocked_id: blockedId }, { ignoreDuplicates: true });
   if (error) throw error;
 }
 
@@ -144,22 +146,19 @@ export async function listBlockedUsers(blockerId: string): Promise<BlockedUser[]
 }
 
 export type ReportInput = {
-  reporterId: string;
   reportedUserId: string;
   reason: ReportReason;
   details: string;
   messageId?: number;
-  messageBody?: string;
 };
 
+// The server copies the reported message text itself, so evidence cannot be faked.
 export async function submitReport(input: ReportInput): Promise<void> {
-  const { error } = await supabase.from('reports').insert({
-    reporter_id: input.reporterId,
-    reported_user_id: input.reportedUserId,
-    reason: input.reason,
-    details: input.details.trim() || null,
-    message_id: input.messageId ?? null,
-    message_body: input.messageBody ?? null,
+  const { error } = await supabase.rpc('report_user', {
+    p_reported: input.reportedUserId,
+    p_reason: input.reason,
+    p_details: input.details.trim() || null,
+    p_message_id: input.messageId ?? null,
   });
   if (error) throw error;
 }
