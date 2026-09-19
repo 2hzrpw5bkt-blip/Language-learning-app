@@ -12,13 +12,23 @@ export type ConversationSummary = {
   muted: boolean;
 };
 
+export type MessageKind = 'text' | 'topic' | 'timer' | 'correction';
+
 export type Message = {
   id: number;
   conversation_id: string;
   sender_id: string;
   body: string;
+  kind: MessageKind;
+  meta: Record<string, unknown> | null;
   corrected_from_message_id: number | null;
   created_at: string;
+};
+
+export type MessageExtras = {
+  kind?: MessageKind;
+  meta?: Record<string, unknown>;
+  corrected_from_message_id?: number;
 };
 
 export type ReportReason = 'harassment' | 'spam' | 'inappropriate' | 'scam' | 'other';
@@ -66,10 +76,15 @@ export async function fetchMessages(conversationId: string, beforeId?: number, l
   return data as Message[];
 }
 
-export async function sendMessage(conversationId: string, senderId: string, body: string): Promise<Message> {
+export async function sendMessage(
+  conversationId: string,
+  senderId: string,
+  body: string,
+  extras: MessageExtras = {},
+): Promise<Message> {
   const { data, error } = await supabase
     .from('messages')
-    .insert({ conversation_id: conversationId, sender_id: senderId, body })
+    .insert({ conversation_id: conversationId, sender_id: senderId, body, ...extras })
     .select('*')
     .single();
   if (error) throw error;
