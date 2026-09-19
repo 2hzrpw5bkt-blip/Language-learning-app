@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -10,7 +10,7 @@ import { Screen } from '@/components/screen';
 import { TextField } from '@/components/text-field';
 import { ErrorText, Muted } from '@/components/typography';
 import { strings } from '@/constants/strings';
-import { spacing } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { removeAvatarFiles, saveProfile, saveUserLanguages, uploadAvatar } from '@/lib/profile';
@@ -104,6 +104,24 @@ export default function EditProfileScreen() {
 
   return (
     <Screen>
+      <Stack.Screen
+        options={{
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} disabled={busy}>
+              <Text style={styles.headerButton}>{strings.common.cancel}</Text>
+            </Pressable>
+          ),
+          headerRight: () =>
+            busy ? (
+              <ActivityIndicator />
+            ) : (
+              <Pressable onPress={save} hitSlop={8}>
+                <Text style={[styles.headerButton, styles.headerSave]}>{strings.common.save}</Text>
+              </Pressable>
+            ),
+        }}
+      />
+      <ErrorText message={error} />
       <View style={styles.photo}>
         <Avatar url={avatarUrl} name={name} />
         <View style={styles.photoButtons}>
@@ -153,13 +171,13 @@ export default function EditProfileScreen() {
         value={teach}
         onChange={setTeach}
       />
-      <ErrorText message={error} />
-      <Button title={strings.common.save} onPress={save} loading={busy} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  headerButton: { fontSize: 17, color: colors.primary },
+  headerSave: { fontWeight: '600' },
   photo: { alignItems: 'center', gap: spacing.sm },
   photoButtons: { flexDirection: 'row', gap: spacing.sm },
 });

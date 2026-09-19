@@ -140,6 +140,8 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 - Listing: icon, screenshots, description, age rating, App Privacy form.
 - Written moderation process (who reviews reports, how fast, what gets a ban) — Apple asks about
   this for apps with user-generated content.
+- Supabase: turn "Confirm email" back ON (switched off during development), replace the draft
+  Terms/Privacy text in `src/constants/legal.ts` with the reviewed versions.
 - Crash reporting (Sentry or similar). Production build with EAS → TestFlight → App Review.
 - **Done when:** Apple approves.
 
