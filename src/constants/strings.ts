@@ -75,7 +75,7 @@ export const strings = {
       },
       {
         title: 'Correct each other',
-        body: 'Long-press a message from your partner and tap Correct. Your fix appears under their message with the changed words highlighted. Be kind, and ask for corrections too.',
+        body: 'Tap Correct under any message from your partner, fix it, send. Your fix appears inside their message with the changed words highlighted. Be kind, and ask for corrections too.',
       },
       {
         title: 'Share the time',
@@ -107,7 +107,7 @@ export const strings = {
     voicePermissionBody: 'Allow microphone access in Settings to record voice messages.',
     voiceFailed: 'Could not record. Please try again.',
     loadingOlder: 'Loading earlier messages…',
-    correctionTip: 'Tip: long-press a message from your partner to correct it. The fix shows up under their message with the changes highlighted.',
+    correctionTip: 'Tip: tap Correct under a message from your partner to fix it. The fix shows up inside their message with the changes highlighted.',
     placeholder: 'Write a message…',
     send: 'Send',
     menu: 'Options',
@@ -124,6 +124,7 @@ export const strings = {
     reportMessage: 'Report this message',
     startFailed: 'Could not start the chat.',
     correct: 'Correct this message',
+    correctShort: 'Correct',
     correctionTitle: 'Suggest a correction',
     correctionHelp: 'Edit the message so it sounds right, then send. Be kind: explain in the chat if it helps.',
     correctionLabel: 'Correction',

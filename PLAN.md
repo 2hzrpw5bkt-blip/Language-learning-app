@@ -119,8 +119,8 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 - Topic prompt cards by level ("Describe your morning routine").
 - Language-switch timer: fixed 5 minutes per language, alternating until stopped. Both people
   must accept to start it and to stop it (request/accept in the chat).
-- Corrections: long-press a partner's message → suggest a corrected version, shown inside the
-  original bubble with the changed words highlighted.
+- Corrections: a Correct button under every partner message → suggest a corrected version, shown
+  inside the original bubble with the changed words highlighted. (Long-press is for reporting.)
 - **Done when:** all three work inside a chat.
 
 ### Phase 5 — Voice messages

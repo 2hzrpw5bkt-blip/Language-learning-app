@@ -448,6 +448,7 @@ export default function ChatScreen() {
                   : undefined
               }
               onLongPress={() => messageOptions(item)}
+              onCorrect={item.sender_id !== me && item.kind === 'text' ? () => setCorrecting(item) : undefined}
             />
           );
         }}
