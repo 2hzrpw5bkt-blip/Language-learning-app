@@ -13,14 +13,15 @@ export function ColorPicker({ value, onChange }: Props) {
   return (
     <View style={styles.row}>
       {AVATAR_COLORS.map((color) => {
-        const active = color.toLowerCase() === value.toLowerCase();
+        const active = color.value.toLowerCase() === value.toLowerCase();
         return (
           <Pressable
-            key={color}
+            key={color.value}
             accessibilityRole="radio"
+            accessibilityLabel={color.name}
             accessibilityState={{ selected: active }}
-            onPress={() => onChange(color)}
-            style={[styles.swatch, { backgroundColor: color }, active && styles.active]}>
+            onPress={() => onChange(color.value)}
+            style={[styles.swatch, { backgroundColor: color.value }, active && styles.active]}>
             {active ? <Ionicons name="checkmark" size={20} color={colors.onPrimary} /> : null}
           </Pressable>
         );

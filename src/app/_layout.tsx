@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/button';
@@ -7,6 +9,7 @@ import { Screen } from '@/components/screen';
 import { Body, Title } from '@/components/typography';
 import { strings } from '@/constants/strings';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import { ChatProvider } from '@/lib/chat-context';
 
 // Keep the splash screen up until we know whether the user is signed in.
@@ -16,6 +19,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ChatProvider>
+        <StatusBar style="dark" />
         <RootStack />
       </ChatProvider>
     </AuthProvider>
@@ -31,7 +35,13 @@ function RootStack() {
     if (!loading) SplashScreen.hideAsync();
   }, [loading]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <ActivityIndicator />
+      </Screen>
+    );
+  }
 
   if (session && loadFailed) {
     return (
@@ -39,6 +49,17 @@ function RootStack() {
         <Title>{strings.errors.loadFailedTitle}</Title>
         <Body>{strings.errors.loadFailedBody}</Body>
         <Button title={strings.common.retry} onPress={retry} />
+      </Screen>
+    );
+  }
+
+  // Signed in with no profile row at all means the account was deleted elsewhere: sign out
+  // rather than sending the user back through onboarding.
+  if (session && !loadFailed && !profile) {
+    supabase.auth.signOut();
+    return (
+      <Screen edges={['top', 'bottom']}>
+        <ActivityIndicator />
       </Screen>
     );
   }

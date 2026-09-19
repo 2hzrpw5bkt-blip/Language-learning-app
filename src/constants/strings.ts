@@ -93,6 +93,8 @@ export const strings = {
     empty: 'No chats yet. Find a partner and say hi!',
     loadError: 'Could not load chats.',
     noMessages: 'Say hi to start the conversation.',
+    unknownUser: 'Unknown user',
+    loadingOlder: 'Loading earlier messages…',
     correctionTip: 'Tip: long-press a message from your partner to correct it. The fix shows up under their message with the changes highlighted.',
     placeholder: 'Write a message…',
     send: 'Send',

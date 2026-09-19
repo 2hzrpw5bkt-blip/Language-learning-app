@@ -1,6 +1,7 @@
 // Holds the signed-in session and the user's profile, and hands them to every screen.
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 
 import { fetchLanguages, fetchProfile, touchLastActive, type ProfileData } from '@/lib/profile';
 import { supabase } from '@/lib/supabase';
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [haveLanguages, userId]);
+  }, [haveLanguages, userId, attempt]);
 
   useEffect(() => {
     if (!sessionLoaded) return;
@@ -91,6 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [userId, sessionLoaded, attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  useEffect(() => {
+    const listener = AppState.addEventListener('change', (status) => {
+      if (status === 'active') setAttempt((n) => n + 1);
+    });
+    return () => listener.remove();
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (!userId) return;

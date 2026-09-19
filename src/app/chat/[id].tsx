@@ -16,6 +16,7 @@ import {
   blockUser,
   fetchConversationPartner,
   fetchMessages,
+  fetchTimerMessages,
   markConversationRead,
   sendMessage,
   subscribeToMessages,
@@ -24,14 +25,11 @@ import {
   type MessageExtras,
 } from '@/lib/chat';
 import { useChats } from '@/lib/chat-context';
+import { mergeMessage } from '@/lib/messages';
 import { errorMessage } from '@/lib/errors';
 import { exchangeLanguages, type ExchangeLanguage } from '@/lib/exchange';
 import { fetchPartner, type Partner } from '@/lib/partners';
 import { summarizeTimer, TIMER_MINUTES, type PendingRequest } from '@/lib/timer';
-
-function addMessage(list: Message[], message: Message): Message[] {
-  return list.some((item) => item.id === message.id) ? list : [message, ...list];
-}
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +41,15 @@ export default function ChatScreen() {
   const [partner, setPartner] = useState<ConversationPartner | null>(null);
   const [partnerDetails, setPartnerDetails] = useState<Partner | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  // Timer messages are tracked separately so the language timer keeps working in a long chat,
+  // where the accept message may be far outside the loaded history.
+  const [timerMessages, setTimerMessages] = useState<Message[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Holds the conversation whose history is fully loaded, so switching chats resets paging
+  // without needing to set state from an effect.
+  const [fullyLoadedFor, setFullyLoadedFor] = useState<string | null>(null);
+  const atStart = fullyLoadedFor === id;
+  const loadingOlder = useRef(false);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +58,28 @@ export default function ChatScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchConversationPartner(id), fetchMessages(id)])
-      .then(([partnerResult, history]) => {
+
+    // Also runs whenever the live connection rejoins: Supabase does not replay messages sent
+    // while the socket was down, so without this they would never appear in an open chat.
+    const loadRecent = () => {
+      Promise.all([fetchMessages(id), fetchTimerMessages(id)])
+        .then(([history, timers]) => {
+          if (cancelled) return;
+          setMessages((current) => history.reduce(mergeMessage, current));
+          setTimerMessages(timers);
+          setLoaded(true);
+          if (history.length < 50) setFullyLoadedFor(id);
+          markConversationRead(id, me).then(reload);
+        })
+        .catch((caught) => {
+          if (!cancelled) setError(errorMessage(caught));
+        });
+    };
+
+    fetchConversationPartner(id)
+      .then((partnerResult) => {
         if (cancelled) return;
         setPartner(partnerResult);
-        setMessages(history);
-        setLoaded(true);
-        markConversationRead(id, me).then(reload);
         if (partnerResult) {
           fetchPartner(partnerResult.id).then((details) => {
             if (!cancelled) setPartnerDetails(details);
@@ -68,15 +89,41 @@ export default function ChatScreen() {
       .catch((caught) => {
         if (!cancelled) setError(errorMessage(caught));
       });
-    const unsubscribe = subscribeToMessages((message) => {
-      setMessages((current) => addMessage(current, message));
-      if (message.sender_id !== me) markConversationRead(id, me).then(reload);
-    }, id);
+
+    const unsubscribe = subscribeToMessages(
+      (message) => {
+        setMessages((current) => mergeMessage(current, message));
+        if (message.kind === 'timer') setTimerMessages((current) => mergeMessage(current, message));
+        if (message.sender_id !== me) markConversationRead(id, me).then(reload);
+      },
+      id,
+      loadRecent,
+    );
     return () => {
       cancelled = true;
       unsubscribe();
     };
   }, [id, me, reload]);
+
+  // Older messages, fetched when the user scrolls back through the history.
+  const loadOlder = useCallback(async () => {
+    if (loadingOlder.current || atStart || messages.length === 0) return;
+    loadingOlder.current = true;
+    try {
+      const oldest = messages[messages.length - 1];
+      const older = await fetchMessages(id, oldest.id);
+      if (older.length === 0) {
+        setFullyLoadedFor(id);
+      } else {
+        setMessages((current) => older.reduce(mergeMessage, current));
+        if (older.length < 50) setFullyLoadedFor(id);
+      }
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      loadingOlder.current = false;
+    }
+  }, [id, atStart, messages]);
 
   const languageName = useCallback(
     (code: string) => languages.find((item) => item.code === code)?.name ?? code,
@@ -91,7 +138,7 @@ export default function ChatScreen() {
       { id: partnerDetails.id, name: partnerDetails.display_name, languages: partnerDetails.languages },
     );
   }, [profile, userLanguages, partnerDetails]);
-  const timer = useMemo(() => summarizeTimer(messages), [messages]);
+  const timer = useMemo(() => summarizeTimer(timerMessages), [timerMessages]);
 
   // Corrections are shown inside the message they correct, so they leave the list.
   const { visibleMessages, correctionsByOriginal } = useMemo(() => {
@@ -117,7 +164,7 @@ export default function ChatScreen() {
     setError(null);
     try {
       const message = await sendMessage(id, me, body, extras);
-      setMessages((current) => addMessage(current, message));
+      setMessages((current) => mergeMessage(current, message));
       reload();
       return true;
     } catch (caught) {
@@ -264,8 +311,9 @@ export default function ChatScreen() {
   };
 
   const sendCorrection = async (original: Message, corrected: string) => {
-    setCorrecting(null);
-    await deliver(corrected, { kind: 'correction', corrected_from_message_id: original.id });
+    // Keep the sheet open until the send succeeds, so a failure does not lose the typed text.
+    const sent = await deliver(corrected, { kind: 'correction', corrected_from_message_id: original.id });
+    if (sent) setCorrecting(null);
   };
 
   const openReport = (message?: Message) => {
@@ -352,6 +400,8 @@ export default function ChatScreen() {
         inverted
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
+        onEndReached={loadOlder}
+        onEndReachedThreshold={0.4}
         ListEmptyComponent={
           loaded ? (
             <View style={styles.empty}>

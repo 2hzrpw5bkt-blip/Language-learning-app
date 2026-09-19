@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -25,6 +25,11 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const goBackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (goBackTimer.current) clearTimeout(goBackTimer.current);
+  }, []);
 
   const validate = (): string | null => {
     if (!EMAIL_PATTERN.test(email.trim())) return strings.auth.invalidEmail;
@@ -56,7 +61,7 @@ export default function SignUpScreen() {
     // No session means email confirmation is switched on in Supabase.
     if (!result.data.session) {
       setNotice(strings.auth.checkEmail);
-      setTimeout(() => router.back(), 4000);
+      goBackTimer.current = setTimeout(() => router.back(), 4000);
     }
   };
 

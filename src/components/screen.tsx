@@ -1,6 +1,6 @@
 // expo-router bundles its own navigation elements; the standalone package is not compatible.
-import { useHeaderHeight } from 'expo-router/build/react-navigation/elements';
-import type { ReactNode } from 'react';
+import { HeaderHeightContext } from 'expo-router/build/react-navigation/elements';
+import { use, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
@@ -16,9 +16,10 @@ type Props = {
 };
 
 export function Screen({ children, scroll = true, edges = ['bottom'], footer }: Props) {
-  // Exact height of the native header above this screen (0 when there is none), so the
-  // keyboard pushes the content up by the right amount instead of covering the bottom.
-  const headerHeight = useHeaderHeight();
+  // Exact height of the native header above this screen, so the keyboard pushes the content up
+  // by the right amount. Read from context rather than useHeaderHeight(), which throws when this
+  // screen is rendered outside a navigator (the offline retry screen is).
+  const headerHeight = use(HeaderHeightContext) ?? 0;
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       <KeyboardAvoidingView

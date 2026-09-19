@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -13,10 +14,12 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { session } = useAuth();
 
-  const done = async () => {
-    if (session) await markWelcomeSeen(session.user.id);
-    router.back();
-  };
+  // Mark it seen on open, not on "Got it": swiping the sheet away should count too.
+  useEffect(() => {
+    if (session) markWelcomeSeen(session.user.id);
+  }, [session]);
+
+  const done = () => router.back();
 
   return (
     <Screen footer={<Button title={strings.welcome.gotIt} onPress={done} />}>

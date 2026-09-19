@@ -1,5 +1,5 @@
 // Keeps the conversation list and total unread count fresh for the tabs.
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
@@ -33,29 +33,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     loaded: false,
   });
 
+  // Reloads can overlap (realtime, focus, foreground). Only the newest one may write state,
+  // otherwise a slow earlier request can restore a stale list.
+  const latest = useRef(0);
   const reload = useCallback(async () => {
+    const ticket = ++latest.current;
     const next = await load();
-    setState({ ...next, loaded: true });
+    if (ticket === latest.current) setState({ ...next, loaded: true });
   }, []);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    load().then((next) => {
-      if (!cancelled) setState({ ...next, loaded: true });
-    });
-    // Any new message I can see changes previews or unread counts.
-    const unsubscribe = subscribeToMessages(() => {
+    const refresh = () => {
+      const ticket = ++latest.current;
       load().then((next) => {
-        if (!cancelled) setState({ ...next, loaded: true });
+        if (!cancelled && ticket === latest.current) setState({ ...next, loaded: true });
       });
-    });
+    };
+    refresh();
+    // Any new message I can see changes previews or unread counts.
+    const unsubscribe = subscribeToMessages(refresh, undefined, refresh);
     const appState = AppState.addEventListener('change', (status) => {
-      if (status === 'active') {
-        load().then((next) => {
-          if (!cancelled) setState({ ...next, loaded: true });
-        });
-      }
+      if (status === 'active') refresh();
     });
     return () => {
       cancelled = true;

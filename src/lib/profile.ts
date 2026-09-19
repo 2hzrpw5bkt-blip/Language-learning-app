@@ -24,7 +24,7 @@ export async function fetchProfile(userId: string): Promise<ProfileData> {
 }
 
 export type ProfilePatch = Partial<
-  Pick<Profile, 'display_name' | 'bio' | 'avatar_color' | 'timezone' | 'onboarded_at' | 'last_active_at'>
+  Pick<Profile, 'display_name' | 'bio' | 'avatar_color' | 'timezone' | 'onboarded_at'>
 >;
 
 // Updates the profile row, or creates it if it is missing (accounts made before the trigger existed).

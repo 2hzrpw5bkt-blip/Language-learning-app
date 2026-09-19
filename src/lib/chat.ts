@@ -1,4 +1,6 @@
 // Conversations, messages, blocks and reports. Screens call these, never Supabase directly.
+import { DEFAULT_AVATAR_COLOR } from '@/constants/avatar-colors';
+import { strings } from '@/constants/strings';
 import { supabase } from '@/lib/supabase';
 
 export type ConversationSummary = {
@@ -58,8 +60,16 @@ export async function fetchConversationPartner(conversationId: string): Promise<
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const row = data as unknown as { user_id: string; profiles: { display_name: string; avatar_color: string } };
-  return { id: row.user_id, display_name: row.profiles.display_name, avatar_color: row.profiles.avatar_color };
+  // The profile may be unreadable (banned or blocked), so fall back instead of crashing.
+  const row = data as unknown as {
+    user_id: string;
+    profiles: { display_name: string; avatar_color: string } | null;
+  };
+  return {
+    id: row.user_id,
+    display_name: row.profiles?.display_name || strings.chats.unknownUser,
+    avatar_color: row.profiles?.avatar_color || DEFAULT_AVATAR_COLOR,
+  };
 }
 
 // Newest first, so an inverted list can show them directly.
@@ -72,6 +82,20 @@ export async function fetchMessages(conversationId: string, beforeId?: number, l
     .limit(limit);
   if (beforeId !== undefined) query = query.lt('id', beforeId);
   const { data, error } = await query;
+  if (error) throw error;
+  return data as Message[];
+}
+
+// The language timer is worked out from timer messages only, so it must not depend on how
+// much of the chat history happens to be loaded.
+export async function fetchTimerMessages(conversationId: string, limit = 20): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .eq('kind', 'timer')
+    .order('id', { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return data as Message[];
 }
@@ -101,7 +125,13 @@ export async function markConversationRead(conversationId: string, userId: strin
 
 // Calls onInsert for every new message the current user is allowed to see.
 // Pass a conversation id to narrow it to one chat. Returns an unsubscribe function.
-export function subscribeToMessages(onInsert: (message: Message) => void, conversationId?: string): () => void {
+export function subscribeToMessages(
+  onInsert: (message: Message) => void,
+  conversationId?: string,
+  // Called every time the channel (re)joins. Supabase does not replay what was missed while
+  // the socket was down, so the caller must refetch here.
+  onResubscribe?: () => void,
+): () => void {
   const channel = supabase
     .channel(conversationId ? `messages:${conversationId}` : 'messages:all')
     .on(
@@ -114,7 +144,9 @@ export function subscribeToMessages(onInsert: (message: Message) => void, conver
       },
       (payload) => onInsert(payload.new as Message),
     )
-    .subscribe();
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') onResubscribe?.();
+    });
   return () => {
     supabase.removeChannel(channel);
   };
@@ -141,8 +173,15 @@ export async function listBlockedUsers(blockerId: string): Promise<BlockedUser[]
     .eq('blocker_id', blockerId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  const rows = data as unknown as { blocked_id: string; profiles: { display_name: string; avatar_color: string } }[];
-  return rows.map((row) => ({ id: row.blocked_id, display_name: row.profiles.display_name, avatar_color: row.profiles.avatar_color }));
+  const rows = data as unknown as {
+    blocked_id: string;
+    profiles: { display_name: string; avatar_color: string } | null;
+  }[];
+  return rows.map((row) => ({
+    id: row.blocked_id,
+    display_name: row.profiles?.display_name || strings.chats.unknownUser,
+    avatar_color: row.profiles?.avatar_color || DEFAULT_AVATAR_COLOR,
+  }));
 }
 
 export type ReportInput = {

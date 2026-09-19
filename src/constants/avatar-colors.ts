@@ -1,13 +1,13 @@
 // The colours a user can pick for their avatar circle.
 export const AVATAR_COLORS = [
-  '#208AEF', // blue
-  '#1B7F3B', // green
-  '#E07A1F', // orange
-  '#7B4FD8', // purple
-  '#D6408B', // pink
-  '#159A9C', // teal
-  '#C93838', // red
-  '#4B5563', // slate
+  { value: '#208AEF', name: 'Blue' },
+  { value: '#1B7F3B', name: 'Green' },
+  { value: '#E07A1F', name: 'Orange' },
+  { value: '#7B4FD8', name: 'Purple' },
+  { value: '#D6408B', name: 'Pink' },
+  { value: '#159A9C', name: 'Teal' },
+  { value: '#C93838', name: 'Red' },
+  { value: '#4B5563', name: 'Slate' },
 ] as const;
 
-export const DEFAULT_AVATAR_COLOR = AVATAR_COLORS[0];
+export const DEFAULT_AVATAR_COLOR = AVATAR_COLORS[0].value;
