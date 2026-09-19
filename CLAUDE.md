@@ -1,0 +1,40 @@
+# Language Exchange App
+
+1:1 language exchange: text chat + voice calls between people learning each other's language.
+Full plan, phases and data model: `PLAN.md` (source of truth — read it before starting a phase).
+
+## Builder
+Solo beginner on Mac + iPhone, Claude Pro. Explain steps briefly, say exactly what to do by hand,
+verify your own work, commit after every working step. Never paste or commit secrets.
+
+## Stack (locked for v1)
+- Expo SDK 57 (React Native) + TypeScript, Expo Router. Expo changes fast: check
+  https://docs.expo.dev/versions/v57.0.0/ before writing Expo code. App code lives in `src/`,
+  screens in `src/app/`, `@/` maps to `src/`.
+- Supabase: Postgres, Auth, Realtime, Edge Functions, Storage. RLS on every table, default deny.
+- LiveKit for audio-only calls (token minted in a Supabase Edge Function; secret never in the app)
+- Expo Notifications for push
+
+## Scope rules
+- iOS first. Code stays cross-platform; Android release later.
+- Voice only, no video. 18+ only. Email sign-in only.
+- No E2E encryption (must be able to review reported messages).
+- Calls ring in-app only (no CallKit in v1).
+- UI in English; all UI strings live in one strings file.
+- Chat never ships without block + report + RLS.
+- Non-goals v1: video, groups, AI tutor, payments, web, streaks, Android.
+
+## Secrets
+- App reads only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from `.env`.
+- `.env` is gitignored. Service-role and LiveKit keys live only in Supabase secrets.
+
+## Commands
+- `npx expo start` — dev server (scan QR with Expo Go on iPhone; press `i` for Simulator)
+- `npx expo start --tunnel` — if phone and Mac are on different networks
+- `npm run typecheck` — type check
+- `npx expo lint` — lint
+- Phase 5+: `npx expo run:ios` (development build, Expo Go no longer works)
+
+## Working style
+- One phase per session. Plan Mode before touching more than 2–3 files.
+- Small tasks, small commits. `/clear` between tasks.
