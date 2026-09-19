@@ -94,7 +94,7 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 ### Phase 1 — Accounts and profile
 - Email sign-up / sign-in (Supabase Auth). 18+ confirmation. Accept Terms + Privacy Policy.
 - Onboarding: display name, languages I speak fluently (mark native), languages I'm learning +
-  level (A1–C2), timezone, short bio, optional avatar.
+  level (beginner / intermediate / advanced), timezone, short bio, optional avatar.
 - Edit profile. Delete account (App Store requires it — build it now, not later).
 - **Done when:** two test accounts exist with full profiles; deletion removes all their data.
 
@@ -173,7 +173,7 @@ There is no community yet, and an empty exchange app is useless, so this matters
 
 - `profiles` — id (= auth user), display_name, bio, avatar_url, timezone, last_active_at, is_banned
 - `languages` — code, name (seeded with the 8 launch languages)
-- `user_languages` — user_id, language_code, kind (`native` | `fluent` | `learning`), level
+- `user_languages` — user_id, language_code, kind (`native` | `fluent` | `learning`), level (`beginner` | `intermediate` | `advanced`, learning only)
 - `conversations` — id, user_a, user_b, created_at, last_message_at
 - `messages` — id, conversation_id, sender_id, body, corrected_from_message_id, created_at
 - `blocks` — blocker_id, blocked_id

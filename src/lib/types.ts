@@ -2,9 +2,9 @@
 
 export type LanguageKind = 'native' | 'fluent' | 'learning';
 
-export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 
-export const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+export const SKILL_LEVELS: SkillLevel[] = ['beginner', 'intermediate', 'advanced'];
 
 export type Language = {
   code: string;
@@ -27,22 +27,22 @@ export type UserLanguage = {
   user_id: string;
   language_code: string;
   kind: LanguageKind;
-  level: CefrLevel | null;
+  level: SkillLevel | null;
 };
 
 // What the user picked in the language pickers, before it is saved.
-export type SpeakChoices = Record<string, { native: boolean }>;
-export type LearnChoices = Record<string, CefrLevel | null>;
+export type TeachChoices = Record<string, { native: boolean }>;
+export type LearnChoices = Record<string, SkillLevel | null>;
 
-export function choicesFromRows(rows: UserLanguage[]): { speak: SpeakChoices; learn: LearnChoices } {
-  const speak: SpeakChoices = {};
+export function choicesFromRows(rows: UserLanguage[]): { teach: TeachChoices; learn: LearnChoices } {
+  const teach: TeachChoices = {};
   const learn: LearnChoices = {};
   for (const row of rows) {
     if (row.kind === 'learning') {
       learn[row.language_code] = row.level;
     } else {
-      speak[row.language_code] = { native: row.kind === 'native' };
+      teach[row.language_code] = { native: row.kind === 'native' };
     }
   }
-  return { speak, learn };
+  return { teach, learn };
 }

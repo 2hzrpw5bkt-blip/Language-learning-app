@@ -5,13 +5,14 @@ import { StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
-import { LearnLanguagePicker, SpeakLanguagePicker } from '@/components/language-pickers';
+import { LearnLanguagePicker, TeachLanguagePicker } from '@/components/language-pickers';
 import { Screen } from '@/components/screen';
 import { TextField } from '@/components/text-field';
 import { ErrorText, Muted } from '@/components/typography';
 import { strings } from '@/constants/strings';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { errorMessage } from '@/lib/errors';
 import { removeAvatarFiles, saveProfile, saveUserLanguages, uploadAvatar } from '@/lib/profile';
 import { deviceTimezone } from '@/lib/timezone';
 import { choicesFromRows } from '@/lib/types';
@@ -25,7 +26,7 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [timezone, setTimezone] = useState(profile?.timezone ?? deviceTimezone());
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
-  const [speak, setSpeak] = useState(initial.speak);
+  const [teach, setTeach] = useState(initial.teach);
   const [learn, setLearn] = useState(initial.learn);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -34,8 +35,7 @@ export default function EditProfileScreen() {
   if (!session || !profile) return null;
   const userId = session.user.id;
 
-  const report = (caught: unknown) =>
-    setError(caught instanceof Error ? caught.message : strings.errors.generic);
+  const report = (caught: unknown) => setError(errorMessage(caught));
 
   const changePhoto = async () => {
     const picked = await ImagePicker.launchImageLibraryAsync({
@@ -76,10 +76,6 @@ export default function EditProfileScreen() {
       setError(strings.onboarding.nameRequired);
       return;
     }
-    if (Object.keys(speak).length === 0) {
-      setError(strings.onboarding.speakRequired);
-      return;
-    }
     const learnCodes = Object.keys(learn);
     if (learnCodes.length === 0) {
       setError(strings.onboarding.learnRequired);
@@ -89,11 +85,15 @@ export default function EditProfileScreen() {
       setError(strings.onboarding.levelRequired);
       return;
     }
+    if (Object.keys(teach).length === 0) {
+      setError(strings.onboarding.teachRequired);
+      return;
+    }
     setError(null);
     setBusy(true);
     try {
       await saveProfile(userId, { display_name: name.trim(), bio: bio.trim(), timezone });
-      await saveUserLanguages(userId, speak, learn);
+      await saveUserLanguages(userId, teach, learn);
       await refreshProfile();
       router.back();
     } catch (caught) {
@@ -139,19 +139,19 @@ export default function EditProfileScreen() {
         variant="secondary"
         onPress={() => setTimezone(deviceTimezone())}
       />
-      <Muted>{strings.onboarding.speakTitle}</Muted>
-      <SpeakLanguagePicker
-        languages={languages}
-        exclude={Object.keys(learn)}
-        value={speak}
-        onChange={setSpeak}
-      />
       <Muted>{strings.onboarding.learnTitle}</Muted>
       <LearnLanguagePicker
         languages={languages}
-        exclude={Object.keys(speak)}
+        locked={Object.keys(teach)}
         value={learn}
         onChange={setLearn}
+      />
+      <Muted>{strings.onboarding.teachTitle}</Muted>
+      <TeachLanguagePicker
+        languages={languages}
+        locked={Object.keys(learn)}
+        value={teach}
+        onChange={setTeach}
       />
       <ErrorText message={error} />
       <Button title={strings.common.save} onPress={save} loading={busy} />

@@ -20,7 +20,7 @@ export default function AboutYouStep() {
       return;
     }
     setError(null);
-    router.push('/onboarding/speak');
+    router.push('/onboarding/learn');
   };
 
   return (

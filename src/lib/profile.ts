@@ -1,6 +1,6 @@
 // All reads and writes for profiles, languages and avatars. Screens call these, never Supabase directly.
 import { supabase } from '@/lib/supabase';
-import type { Language, LearnChoices, Profile, SpeakChoices, UserLanguage } from '@/lib/types';
+import type { Language, LearnChoices, Profile, TeachChoices, UserLanguage } from '@/lib/types';
 
 export async function fetchLanguages(): Promise<Language[]> {
   const { data, error } = await supabase.from('languages').select('code, name').order('name');
@@ -27,19 +27,24 @@ export type ProfilePatch = Partial<
   Pick<Profile, 'display_name' | 'bio' | 'avatar_url' | 'timezone' | 'onboarded_at' | 'last_active_at'>
 >;
 
+// Updates the profile row, or creates it if it is missing (accounts made before the trigger existed).
+// Not an upsert: that would need update rights on every column, which users deliberately lack.
 export async function saveProfile(userId: string, patch: ProfilePatch): Promise<void> {
-  const { error } = await supabase.from('profiles').upsert({ id: userId, ...patch });
-  if (error) throw error;
+  const updated = await supabase.from('profiles').update(patch).eq('id', userId).select('id');
+  if (updated.error) throw updated.error;
+  if (updated.data.length > 0) return;
+  const inserted = await supabase.from('profiles').insert({ id: userId, ...patch });
+  if (inserted.error) throw inserted.error;
 }
 
 // Replaces the user's whole language list with the given choices.
 export async function saveUserLanguages(
   userId: string,
-  speak: SpeakChoices,
+  teach: TeachChoices,
   learn: LearnChoices,
 ): Promise<void> {
   const rows = [
-    ...Object.entries(speak).map(([code, { native }]) => ({
+    ...Object.entries(teach).map(([code, { native }]) => ({
       user_id: userId,
       language_code: code,
       kind: native ? 'native' : 'fluent',
