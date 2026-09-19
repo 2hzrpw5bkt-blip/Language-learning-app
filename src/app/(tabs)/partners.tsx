@@ -10,7 +10,6 @@ import { colors, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
 import { findPartners, type Partner, type PartnerFilters } from '@/lib/partners';
-import { SKILL_LEVELS, type SkillLevel } from '@/lib/types';
 
 type Result = { partners: Partner[]; error: string | null };
 
@@ -26,7 +25,6 @@ export default function PartnersScreen() {
   const router = useRouter();
   const { userLanguages, languages } = useAuth();
   const [language, setLanguage] = useState<string | null>(null);
-  const [level, setLevel] = useState<SkillLevel | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   // Bumped to reload with the same filters (pull to refresh, coming back to the tab).
@@ -34,7 +32,7 @@ export default function PartnersScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    load({ language, level }).then((next) => {
+    load({ language, level: null }).then((next) => {
       if (!cancelled) {
         setResult(next);
         setRefreshing(false);
@@ -43,7 +41,7 @@ export default function PartnersScreen() {
     return () => {
       cancelled = true;
     };
-  }, [language, level, reloadKey]);
+  }, [language, reloadKey]);
 
   useFocusEffect(
     useCallback(() => {
@@ -66,11 +64,6 @@ export default function PartnersScreen() {
         label: languages.find((item) => item.code === row.language_code)?.name ?? row.language_code,
       })),
   ];
-  const levelOptions: ChipOption<SkillLevel | null>[] = [
-    { value: null, label: strings.partners.anyLevel },
-    ...SKILL_LEVELS.map((item) => ({ value: item, label: strings.levels[item].title })),
-  ];
-
   return (
     <View style={styles.container}>
       <FlatList
@@ -87,13 +80,6 @@ export default function PartnersScreen() {
               value={language}
               onChange={setLanguage}
               accessibilityLabel={strings.partners.languageFilterLabel}
-            />
-            <Muted style={styles.filterLabel}>{strings.partners.levelFilterLabel}</Muted>
-            <Chips
-              options={levelOptions}
-              value={level}
-              onChange={setLevel}
-              accessibilityLabel={strings.partners.levelFilterLabel}
             />
             <ErrorText message={result?.error ?? null} />
           </View>
