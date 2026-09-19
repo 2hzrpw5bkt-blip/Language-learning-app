@@ -47,13 +47,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
     });
-    fetchLanguages()
-      .then(setLanguages)
-      .catch((error) => console.warn('Could not load languages', error));
     return () => listener.subscription.unsubscribe();
   }, []);
 
   const userId = session?.user.id ?? null;
+
+  // Load the language list once, and try again on each sign-in if an earlier attempt failed
+  // (for example because the app was opened before the database was ready).
+  const haveLanguages = languages.length > 0;
+  useEffect(() => {
+    if (haveLanguages) return;
+    let cancelled = false;
+    fetchLanguages()
+      .then((list) => {
+        if (!cancelled) setLanguages(list);
+      })
+      .catch((error) => console.warn('Could not load languages', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [haveLanguages, userId]);
 
   useEffect(() => {
     if (!sessionLoaded) return;
