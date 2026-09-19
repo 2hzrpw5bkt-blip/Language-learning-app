@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { strings } from '@/constants/strings';
@@ -9,22 +9,27 @@ type Status =
   | { kind: 'ok'; message: string }
   | { kind: 'error'; detail: string };
 
+// Reads one row from the `hello` table. Returns the next screen state instead of setting it,
+// so the component can call it from both the mount effect and the retry button.
+async function fetchHello(): Promise<Status> {
+  const { data, error } = await supabase.from('hello').select('message').limit(1).single();
+  if (error) {
+    return { kind: 'error', detail: error.message };
+  }
+  return { kind: 'ok', message: data.message };
+}
+
 export default function HomeScreen() {
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
 
-  const load = useCallback(async () => {
-    setStatus({ kind: 'loading' });
-    const { data, error } = await supabase.from('hello').select('message').limit(1).single();
-    if (error) {
-      setStatus({ kind: 'error', detail: error.message });
-    } else {
-      setStatus({ kind: 'ok', message: data.message });
-    }
+  useEffect(() => {
+    fetchHello().then(setStatus);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const retry = () => {
+    setStatus({ kind: 'loading' });
+    fetchHello().then(setStatus);
+  };
 
   return (
     <View style={styles.container}>
@@ -48,7 +53,7 @@ export default function HomeScreen() {
         <>
           <Text style={[styles.body, styles.error]}>{strings.home.error}</Text>
           <Text style={styles.detail}>{status.detail}</Text>
-          <Pressable onPress={load} style={styles.button}>
+          <Pressable onPress={retry} style={styles.button}>
             <Text style={styles.buttonText}>{strings.home.retry}</Text>
           </Pressable>
         </>
