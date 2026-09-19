@@ -32,6 +32,7 @@ export default function TeachStep() {
       await saveProfile(session.user.id, {
         display_name: draft.name.trim(),
         bio: draft.bio.trim(),
+        avatar_color: draft.color,
         timezone: deviceTimezone(),
         onboarded_at: new Date().toISOString(),
       });

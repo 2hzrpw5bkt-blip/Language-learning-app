@@ -24,7 +24,7 @@ export async function fetchProfile(userId: string): Promise<ProfileData> {
 }
 
 export type ProfilePatch = Partial<
-  Pick<Profile, 'display_name' | 'bio' | 'avatar_url' | 'timezone' | 'onboarded_at' | 'last_active_at'>
+  Pick<Profile, 'display_name' | 'bio' | 'avatar_color' | 'timezone' | 'onboarded_at' | 'last_active_at'>
 >;
 
 // Updates the profile row, or creates it if it is missing (accounts made before the trigger existed).
@@ -71,39 +71,9 @@ export async function touchLastActive(userId: string): Promise<void> {
     .eq('id', userId);
 }
 
-// Uploads a picked image as the user's avatar and returns its public URL.
-export async function uploadAvatar(
-  userId: string,
-  localUri: string,
-  mimeType: string | undefined,
-): Promise<string> {
-  const contentType = mimeType ?? 'image/jpeg';
-  const extension = contentType.split('/')[1] === 'png' ? 'png' : 'jpg';
-  const path = `${userId}/avatar.${extension}`;
-  const body = await fetch(localUri).then((response) => response.arrayBuffer());
-  const { error } = await supabase.storage
-    .from('avatars')
-    .upload(path, body, { contentType, upsert: true });
-  if (error) throw error;
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-  // The query string makes the app refetch the image after a change.
-  return `${data.publicUrl}?v=${Date.now()}`;
-}
-
-export async function removeAvatarFiles(userId: string): Promise<void> {
-  const { data, error } = await supabase.storage.from('avatars').list(userId);
-  if (error) throw error;
-  if (!data || data.length === 0) return;
-  const paths = data.map((file) => `${userId}/${file.name}`);
-  const removed = await supabase.storage.from('avatars').remove(paths);
-  if (removed.error) throw removed.error;
-}
-
-// Permanently deletes the signed-in user and everything they own.
-// Avatar files go first through the Storage API; the SQL function then deletes the auth user,
-// which cascades to the profile and languages.
-export async function deleteOwnAccount(userId: string): Promise<void> {
-  await removeAvatarFiles(userId);
+// Permanently deletes the signed-in user. The SQL function deletes the auth user, which
+// cascades to the profile, languages, conversations and messages.
+export async function deleteOwnAccount(): Promise<void> {
   const { error } = await supabase.rpc('delete_own_account');
   if (error) throw error;
   await supabase.auth.signOut({ scope: 'local' });

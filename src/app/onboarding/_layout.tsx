@@ -3,11 +3,13 @@ import { Stack } from 'expo-router';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
 import { strings } from '@/constants/strings';
+import { DEFAULT_AVATAR_COLOR } from '@/constants/avatar-colors';
 import type { LearnChoices, TeachChoices } from '@/lib/types';
 
 type Draft = {
   name: string;
   bio: string;
+  color: string;
   learn: LearnChoices;
   teach: TeachChoices;
 };
@@ -26,7 +28,7 @@ export function useOnboardingDraft(): DraftContextValue {
 }
 
 function DraftProvider({ children }: { children: ReactNode }) {
-  const [draft, setDraft] = useState<Draft>({ name: '', bio: '', learn: {}, teach: {} });
+  const [draft, setDraft] = useState<Draft>({ name: '', bio: '', color: DEFAULT_AVATAR_COLOR, learn: {}, teach: {} });
   const update = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }));
   return <DraftContext.Provider value={{ draft, update }}>{children}</DraftContext.Provider>;
 }

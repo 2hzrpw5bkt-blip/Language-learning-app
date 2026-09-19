@@ -32,7 +32,7 @@ export default function ProfileScreen() {
         onPress: async () => {
           setDeleting(true);
           try {
-            await deleteOwnAccount(profile.id);
+            await deleteOwnAccount();
           } catch {
             setDeleting(false);
             Alert.alert(strings.errors.generic);
@@ -45,7 +45,7 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Avatar url={profile.avatar_url} name={profile.display_name} />
+        <Avatar color={profile.avatar_color} name={profile.display_name} />
         <Title>{profile.display_name}</Title>
       </View>
       <Body>{profile.bio || strings.profile.noBio}</Body>

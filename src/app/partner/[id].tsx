@@ -134,7 +134,7 @@ export default function PartnerScreen() {
         }}
       />
       <View style={styles.header}>
-        <Avatar url={partner.avatar_url} name={partner.display_name} />
+        <Avatar color={partner.avatar_color} name={partner.display_name} />
         <Title>{partner.display_name}</Title>
         <Muted>{activeLabel(partner.last_active_at)}</Muted>
       </View>

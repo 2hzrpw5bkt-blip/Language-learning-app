@@ -1,28 +1,27 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { DEFAULT_AVATAR_COLOR } from '@/constants/avatar-colors';
 import { colors } from '@/constants/theme';
 
 type Props = {
-  url: string | null;
+  color: string | null | undefined;
   name: string;
   size?: number;
 };
 
-export function Avatar({ url, name, size = 96 }: Props) {
-  const round = { width: size, height: size, borderRadius: size / 2 };
-  if (url) {
-    return <Image source={{ uri: url }} style={[styles.image, round]} accessibilityLabel={name} />;
-  }
+// A coloured circle with the first letter of the name. No photos in v1.
+export function Avatar({ color, name, size = 96 }: Props) {
   const initial = name.trim().charAt(0).toUpperCase() || '?';
   return (
-    <View style={[styles.placeholder, round]} accessibilityLabel={name}>
+    <View
+      style={[styles.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: color || DEFAULT_AVATAR_COLOR }]}
+      accessibilityLabel={name}>
       <Text style={[styles.initial, { fontSize: size / 2.5 }]}>{initial}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  image: { backgroundColor: colors.surface },
-  placeholder: { backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  circle: { alignItems: 'center', justifyContent: 'center' },
   initial: { color: colors.onPrimary, fontWeight: '700' },
 });

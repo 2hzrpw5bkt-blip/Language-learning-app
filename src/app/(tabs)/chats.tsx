@@ -42,7 +42,7 @@ export default function ChatsScreen() {
               accessibilityRole="button"
               onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-              <Avatar url={item.other_avatar_url} name={item.other_name} size={52} />
+              <Avatar color={item.other_avatar_color} name={item.other_name} size={52} />
               <View style={styles.text}>
                 <View style={styles.titleRow}>
                   <Body style={[styles.name, unread && styles.bold]} numberOfLines={1}>

@@ -49,7 +49,7 @@ export default function BlockedUsersScreen() {
       {users && users.length === 0 ? <Muted>{strings.chats.noBlockedUsers}</Muted> : null}
       {(users ?? []).map((user) => (
         <View key={user.id} style={styles.row}>
-          <Avatar url={user.avatar_url} name={user.display_name} size={44} />
+          <Avatar color={user.avatar_color} name={user.display_name} size={44} />
           <Body style={styles.name}>{user.display_name}</Body>
           <Button title={strings.chats.unblock} variant="secondary" onPress={() => unblock(user)} />
         </View>

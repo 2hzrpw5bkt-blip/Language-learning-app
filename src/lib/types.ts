@@ -15,7 +15,7 @@ export type Profile = {
   id: string;
   display_name: string;
   bio: string;
-  avatar_url: string | null;
+  avatar_color: string;
   timezone: string;
   onboarded_at: string | null;
   last_active_at: string;

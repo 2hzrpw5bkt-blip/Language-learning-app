@@ -5,7 +5,7 @@ export type ConversationSummary = {
   id: string;
   other_id: string;
   other_name: string;
-  other_avatar_url: string | null;
+  other_avatar_color: string;
   last_message_at: string | null;
   last_message_preview: string | null;
   unread_count: number;
@@ -47,19 +47,19 @@ export async function listConversations(): Promise<ConversationSummary[]> {
   return (data as ConversationSummary[]).map((row) => ({ ...row, unread_count: Number(row.unread_count) }));
 }
 
-export type ConversationPartner = { id: string; display_name: string; avatar_url: string | null };
+export type ConversationPartner = { id: string; display_name: string; avatar_color: string };
 
 export async function fetchConversationPartner(conversationId: string): Promise<ConversationPartner | null> {
   const { data, error } = await supabase
     .from('conversation_participants')
-    .select('user_id, profiles ( display_name, avatar_url )')
+    .select('user_id, profiles ( display_name, avatar_color )')
     .eq('conversation_id', conversationId)
     .neq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const row = data as unknown as { user_id: string; profiles: { display_name: string; avatar_url: string | null } };
-  return { id: row.user_id, display_name: row.profiles.display_name, avatar_url: row.profiles.avatar_url };
+  const row = data as unknown as { user_id: string; profiles: { display_name: string; avatar_color: string } };
+  return { id: row.user_id, display_name: row.profiles.display_name, avatar_color: row.profiles.avatar_color };
 }
 
 // Newest first, so an inverted list can show them directly.
@@ -130,17 +130,17 @@ export async function unblockUser(blockerId: string, blockedId: string): Promise
   if (error) throw error;
 }
 
-export type BlockedUser = { id: string; display_name: string; avatar_url: string | null };
+export type BlockedUser = { id: string; display_name: string; avatar_color: string };
 
 export async function listBlockedUsers(blockerId: string): Promise<BlockedUser[]> {
   const { data, error } = await supabase
     .from('blocks')
-    .select('blocked_id, profiles!blocks_blocked_id_fkey ( display_name, avatar_url )')
+    .select('blocked_id, profiles!blocks_blocked_id_fkey ( display_name, avatar_color )')
     .eq('blocker_id', blockerId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  const rows = data as unknown as { blocked_id: string; profiles: { display_name: string; avatar_url: string | null } }[];
-  return rows.map((row) => ({ id: row.blocked_id, display_name: row.profiles.display_name, avatar_url: row.profiles.avatar_url }));
+  const rows = data as unknown as { blocked_id: string; profiles: { display_name: string; avatar_color: string } }[];
+  return rows.map((row) => ({ id: row.blocked_id, display_name: row.profiles.display_name, avatar_color: row.profiles.avatar_color }));
 }
 
 export type ReportInput = {

@@ -6,7 +6,7 @@ export type PartnerLanguage = Pick<UserLanguage, 'language_code' | 'kind' | 'lev
 
 export type Partner = Pick<
   Profile,
-  'id' | 'display_name' | 'bio' | 'avatar_url' | 'timezone' | 'last_active_at'
+  'id' | 'display_name' | 'bio' | 'avatar_color' | 'timezone' | 'last_active_at'
 > & { languages: PartnerLanguage[] };
 
 export type PartnerFilters = {
@@ -29,7 +29,7 @@ export async function fetchPartner(id: string): Promise<Partner | null> {
   const [profileResult, languagesResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, bio, avatar_url, timezone, last_active_at')
+      .select('id, display_name, bio, avatar_color, timezone, last_active_at')
       .eq('id', id)
       .maybeSingle(),
     supabase.from('user_languages').select('language_code, kind, level').eq('user_id', id),

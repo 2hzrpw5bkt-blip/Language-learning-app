@@ -29,6 +29,8 @@ testing, and Google's required closed test needs real testers we don't have yet)
 - Voice only. No video — less moderation risk, less bandwidth, less cost.
 - 18+ only. Age confirmation at signup.
 - Email sign-in only for v1. (Adding Google login forces adding Apple login on iOS — later.)
+- No profile photos in v1: users pick an avatar colour. Less moderation risk.
+- Banned-word filter on messages, names and bios (`banned_words` table, editable in the dashboard).
 - No end-to-end encryption in v1. TLS in transit + Supabase encryption at rest. We must be able to
   review reported messages.
 - Calls ring in-app only in v1 (both have the app open, or they agree a time in chat). Native
@@ -94,7 +96,7 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 ### Phase 1 — Accounts and profile
 - Email sign-up / sign-in (Supabase Auth). 18+ confirmation. Accept Terms + Privacy Policy.
 - Onboarding: display name, languages I speak fluently (mark native), languages I'm learning +
-  level (beginner / intermediate / advanced), timezone, short bio, optional avatar.
+  level (beginner / intermediate / advanced), timezone, short bio, avatar colour.
 - Edit profile. Delete account (App Store requires it — build it now, not later).
 - **Done when:** two test accounts exist with full profiles; deletion removes all their data.
 
@@ -173,7 +175,7 @@ There is no community yet, and an empty exchange app is useless, so this matters
 
 ## 5. Data model (starting sketch)
 
-- `profiles` — id (= auth user), display_name, bio, avatar_url, timezone, last_active_at, is_banned
+- `profiles` — id (= auth user), display_name, bio, avatar_color, timezone, last_active_at, is_banned
 - `languages` — code, name (seeded with the 8 launch languages)
 - `user_languages` — user_id, language_code, kind (`native` | `fluent` | `learning`), level (`beginner` | `intermediate` | `advanced`, learning only)
 - `conversations` — id, user_a, user_b, created_at, last_message_at

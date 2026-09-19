@@ -29,7 +29,7 @@ export function PartnerCard({ partner, languages, onPress }: Props) {
   const { helps, practising } = describeLanguages(partner, languages);
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <Avatar url={partner.avatar_url} name={partner.display_name} size={56} />
+      <Avatar color={partner.avatar_color} name={partner.display_name} size={56} />
       <View style={styles.text}>
         <View style={styles.titleRow}>
           <Body style={styles.name} numberOfLines={1}>

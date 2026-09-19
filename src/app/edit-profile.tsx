@@ -1,19 +1,20 @@
-import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
+import { ColorPicker } from '@/components/color-picker';
 import { LearnLanguagePicker, TeachLanguagePicker } from '@/components/language-pickers';
 import { Screen } from '@/components/screen';
 import { TextField } from '@/components/text-field';
-import { ErrorText, Muted } from '@/components/typography';
+import { Body, ErrorText, Muted } from '@/components/typography';
+import { DEFAULT_AVATAR_COLOR } from '@/constants/avatar-colors';
 import { strings } from '@/constants/strings';
 import { colors, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/errors';
-import { removeAvatarFiles, saveProfile, saveUserLanguages, uploadAvatar } from '@/lib/profile';
+import { saveProfile, saveUserLanguages } from '@/lib/profile';
 import { deviceTimezone } from '@/lib/timezone';
 import { choicesFromRows } from '@/lib/types';
 
@@ -25,51 +26,16 @@ export default function EditProfileScreen() {
   const [name, setName] = useState(profile?.display_name ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [timezone, setTimezone] = useState(profile?.timezone ?? deviceTimezone());
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
+  const [color, setColor] = useState(profile?.avatar_color ?? DEFAULT_AVATAR_COLOR);
   const [teach, setTeach] = useState(initial.teach);
   const [learn, setLearn] = useState(initial.learn);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [photoBusy, setPhotoBusy] = useState(false);
 
   if (!session || !profile) return null;
   const userId = session.user.id;
 
   const report = (caught: unknown) => setError(errorMessage(caught));
-
-  const changePhoto = async () => {
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (picked.canceled) return;
-    const asset = picked.assets[0];
-    setPhotoBusy(true);
-    try {
-      const url = await uploadAvatar(userId, asset.uri, asset.mimeType);
-      await saveProfile(userId, { avatar_url: url });
-      setAvatarUrl(url);
-    } catch (caught) {
-      report(caught);
-    } finally {
-      setPhotoBusy(false);
-    }
-  };
-
-  const removePhoto = async () => {
-    setPhotoBusy(true);
-    try {
-      await removeAvatarFiles(userId);
-      await saveProfile(userId, { avatar_url: null });
-      setAvatarUrl(null);
-    } catch (caught) {
-      report(caught);
-    } finally {
-      setPhotoBusy(false);
-    }
-  };
 
   const save = async () => {
     if (name.trim().length === 0) {
@@ -92,7 +58,7 @@ export default function EditProfileScreen() {
     setError(null);
     setBusy(true);
     try {
-      await saveProfile(userId, { display_name: name.trim(), bio: bio.trim(), timezone });
+      await saveProfile(userId, { display_name: name.trim(), bio: bio.trim(), avatar_color: color, timezone });
       await saveUserLanguages(userId, teach, learn);
       await refreshProfile();
       router.back();
@@ -115,24 +81,10 @@ export default function EditProfileScreen() {
       />
       <ErrorText message={error} />
       <View style={styles.photo}>
-        <Avatar url={avatarUrl} name={name} />
-        <View style={styles.photoButtons}>
-          <Button
-            title={strings.editProfile.changePhoto}
-            variant="secondary"
-            onPress={changePhoto}
-            loading={photoBusy}
-          />
-          {avatarUrl ? (
-            <Button
-              title={strings.editProfile.removePhoto}
-              variant="secondary"
-              onPress={removePhoto}
-              disabled={photoBusy}
-            />
-          ) : null}
-        </View>
+        <Avatar color={color} name={name} />
       </View>
+      <Body style={styles.label}>{strings.onboarding.colorLabel}</Body>
+      <ColorPicker value={color} onChange={setColor} />
       <TextField label={strings.onboarding.nameLabel} value={name} onChangeText={setName} maxLength={40} />
       <TextField
         label={`${strings.onboarding.bioLabel} (${strings.common.optional})`}
@@ -170,5 +122,5 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   headerButton: { fontSize: 17, color: colors.primary },
   photo: { alignItems: 'center', gap: spacing.sm },
-  photoButtons: { flexDirection: 'row', gap: spacing.sm },
+  label: { fontWeight: '600' },
 });

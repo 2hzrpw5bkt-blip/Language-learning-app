@@ -38,6 +38,7 @@ export const strings = {
     bioLabel: 'Short bio',
     bioPlaceholder: 'Where you are, what you like, when you can chat…',
     nameRequired: 'Please enter a display name.',
+    colorLabel: 'Your colour',
     learnTitle: 'What do you want to practise?',
     learnHelp: 'Pick the languages you are learning and how far along you are.',
     learnRequired: 'Pick at least one language to practise.',
@@ -215,8 +216,6 @@ export const strings = {
   },
   editProfile: {
     title: 'Edit profile',
-    changePhoto: 'Change photo',
-    removePhoto: 'Remove photo',
     useDeviceTimezone: 'Use device timezone',
   },
   legal: {
@@ -230,5 +229,6 @@ export const strings = {
   },
   errors: {
     generic: 'Something went wrong. Please try again.',
+    bannedWords: 'That text contains words that are not allowed here. Please change it.',
   },
 } as const;

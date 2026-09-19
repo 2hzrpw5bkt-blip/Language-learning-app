@@ -33,13 +33,7 @@
           "imageWidth": 76
         }
       ],
-      "expo-localization",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Choose a profile photo from your library."
-        }
-      ]
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
