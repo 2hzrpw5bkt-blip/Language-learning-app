@@ -32,7 +32,7 @@ export default function PartnerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session, languages } = useAuth();
-  const { reload } = useChats();
+  const { conversations, reload } = useChats();
   const me = session?.user.id ?? '';
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [starting, setStarting] = useState(false);
@@ -65,6 +65,8 @@ export default function PartnerScreen() {
   }
 
   const { partner } = state;
+  // If we already chat, the button opens that chat instead of starting a new one.
+  const existing = conversations.find((item) => item.other_id === partner.id);
 
   const sayHi = async () => {
     setStarting(true);
@@ -113,7 +115,14 @@ export default function PartnerScreen() {
   const practising = rows.filter((row) => row.kind === 'learning');
 
   return (
-    <Screen footer={<Button title={strings.partners.sayHi} onPress={sayHi} loading={starting} />}>
+    <Screen
+      footer={
+        <Button
+          title={existing ? strings.partners.openChat : strings.partners.sayHi}
+          onPress={sayHi}
+          loading={starting}
+        />
+      }>
       <Stack.Screen
         options={{
           title: partner.display_name,

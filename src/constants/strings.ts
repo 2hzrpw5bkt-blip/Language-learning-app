@@ -142,6 +142,7 @@ export const strings = {
     activeWeeksAgo: (weeks: number) => (weeks === 1 ? 'Active last week' : `Active ${weeks} weeks ago`),
     activeLongAgo: 'Active a while ago',
     sayHi: 'Say hi',
+    openChat: 'Open chat',
     refresh: 'Refresh',
     notFound: 'This person is no longer here.',
   },
