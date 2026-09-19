@@ -1,3 +1,4 @@
+import { useHeaderHeight } from '@react-navigation/elements';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
@@ -14,12 +15,15 @@ type Props = {
 };
 
 export function Screen({ children, scroll = true, edges = ['bottom'], footer }: Props) {
+  // Exact height of the native header above this screen (0 when there is none), so the
+  // keyboard pushes the content up by the right amount instead of covering the bottom.
+  const headerHeight = useHeaderHeight();
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
         {scroll ? (
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {children}
