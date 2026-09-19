@@ -24,6 +24,11 @@ verify your own work, commit after every working step. Never paste or commit sec
 - Chat never ships without block + report + RLS.
 - Non-goals v1: video, groups, AI tutor, payments, web, streaks, Android.
 
+## Database changes
+- Write SQL as `supabase/migrations/NNNN_name.sql`, idempotent (drop-if-exists / if-not-exists).
+- The builder pastes it into Supabase > SQL Editor and runs it. No Supabase CLI yet.
+- `src/lib/profile.ts` holds all profile/language queries; screens never call Supabase tables directly.
+
 ## Secrets
 - App reads only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from `.env`.
 - `.env` is gitignored. Service-role and LiveKit keys live only in Supabase secrets.
