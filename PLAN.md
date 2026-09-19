@@ -73,7 +73,7 @@ streaks, Android release.
   be tested between them (the Simulator uses the Mac's microphone).
 
 ### Free accounts
-- GitHub (code backup), Expo (expo.dev), Supabase (supabase.com), LiveKit Cloud (livekit.io)
+- GitHub (code backup), Expo (expo.dev), Supabase (supabase.com)
 
 ### Paid — Apple Developer Program (yearly fee)
 - Not needed for Phases 0–5 (voice messages still run in Expo Go).

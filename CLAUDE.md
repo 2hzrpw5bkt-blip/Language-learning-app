@@ -30,7 +30,7 @@ verify your own work, commit after every working step. Never paste or commit sec
 
 ## Secrets
 - App reads only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from `.env`.
-- `.env` is gitignored. Service-role and LiveKit keys live only in Supabase secrets.
+- `.env` is gitignored. The service-role key lives only in Supabase secrets, never in the app.
 
 ## Commands
 - `npx expo start` — dev server (scan QR with Expo Go on iPhone; press `i` for Simulator)
