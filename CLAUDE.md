@@ -12,14 +12,13 @@ verify your own work, commit after every working step. Never paste or commit sec
   https://docs.expo.dev/versions/v57.0.0/ before writing Expo code. App code lives in `src/`,
   screens in `src/app/`, `@/` maps to `src/`.
 - Supabase: Postgres, Auth, Realtime, Edge Functions, Storage. RLS on every table, default deny.
-- LiveKit for audio-only calls (token minted in a Supabase Edge Function; secret never in the app)
+- Voice messages: `expo-audio` recordings in a private Supabase Storage bucket. No live calls in v1.
 - Expo Notifications for push
 
 ## Scope rules
 - iOS first. Code stays cross-platform; Android release later.
-- Voice only, no video. 18+ only. Email sign-in only.
+- Voice messages, no live calls, no video. 18+ only. Email sign-in only.
 - No E2E encryption (must be able to review reported messages).
-- Calls ring in-app only (no CallKit in v1).
 - UI in English; all UI strings live in one strings file.
 - Chat never ships without block + report + RLS.
 - Non-goals v1: video, groups, AI tutor, payments, web, streaks, Android.
@@ -38,7 +37,7 @@ verify your own work, commit after every working step. Never paste or commit sec
 - `npx expo start --tunnel` — if phone and Mac are on different networks
 - `npm run typecheck` — type check
 - `npx expo lint` — lint
-- Phase 5+: `npx expo run:ios` (development build, Expo Go no longer works)
+- Phase 6+: `npx expo run:ios` (development build, Expo Go no longer works)
 
 ## Working style
 - One phase per session. Plan Mode before touching more than 2–3 files.

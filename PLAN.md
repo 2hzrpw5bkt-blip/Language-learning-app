@@ -1,7 +1,7 @@
 # Language Exchange App — Build Plan
 
 A mobile app where two people who each speak the language the other is learning chat by text and
-talk by voice, teaching each other. Example: a Finnish speaker learning Spanish paired with a
+voice message, teaching each other. Example: a Finnish speaker learning Spanish paired with a
 Spanish speaker learning Finnish.
 
 This file is the source of truth for the project. Claude Code: read this before starting any phase.
@@ -17,7 +17,7 @@ Claude Pro plan. Explain steps briefly, say exactly what must be done by hand, v
 |---|---|---|
 | App framework | **Expo (React Native) + TypeScript** | One codebase for iOS + Android. |
 | Backend | **Supabase** (Postgres, Auth, Realtime, Edge Functions, Storage) | Accounts, database, live chat out of the box. Open source, free tier. |
-| Voice calls | **LiveKit** (open source WebRTC). LiveKit Cloud free tier first; self-host later if needed. | Handles the hard networking. Media encrypted in transit by default. |
+| Voice | **Voice messages** (short recorded clips in the chat) via `expo-audio` + Supabase Storage. Live calls (LiveKit) are a later upgrade, only if users ask for them. | Far less to build, works in Expo Go, and much less intimidating for shy learners than a live call. |
 | Push notifications | **Expo Notifications** | One API for both platforms. |
 | Navigation | Expo Router | Default for new Expo apps. |
 
@@ -26,15 +26,16 @@ The code stays cross-platform; Android comes after iOS has real users (Android e
 testing, and Google's required closed test needs real testers we don't have yet).
 
 **Scope rules**
-- Voice only. No video — less moderation risk, less bandwidth, less cost.
+- No live calls in v1. Voice messages instead: most learners are too shy to call a stranger, and
+  clips are a fraction of the work. No video — less moderation risk, less bandwidth, less cost.
+- Voice messages are private to the two participants (private bucket, max 60 seconds) and can be
+  reported like any message; a moderator listens to the clip from the dashboard.
 - 18+ only. Age confirmation at signup.
 - Email sign-in only for v1. (Adding Google login forces adding Apple login on iOS — later.)
 - No profile photos in v1: users pick an avatar colour. Less moderation risk.
 - Banned-word filter on messages, names and bios (`banned_words` table, editable in the dashboard).
 - No end-to-end encryption in v1. TLS in transit + Supabase encryption at rest. We must be able to
   review reported messages.
-- Calls ring in-app only in v1 (both have the app open, or they agree a time in chat). Native
-  phone-style ringing (CallKit) is a later upgrade — it is fiddly.
 - App UI in English for v1, but all UI text goes through one strings file so translating later is easy.
 
 **Languages**
@@ -47,7 +48,8 @@ testing, and Google's required closed test needs real testers we don't have yet)
 - Matching uses "speaks fluently", not strictly "native" — many Finnish learners' native language
   isn't on the list, but they can offer fluent English.
 
-**Non-goals for v1:** video, group rooms, AI tutor features, payments, web version, streaks, Android release.
+**Non-goals for v1:** live voice calls, video, group rooms, AI tutor features, payments, web version,
+streaks, Android release.
 
 ---
 
@@ -74,12 +76,9 @@ testing, and Google's required closed test needs real testers we don't have yet)
 - GitHub (code backup), Expo (expo.dev), Supabase (supabase.com), LiveKit Cloud (livekit.io)
 
 ### Paid — Apple Developer Program (yearly fee)
-- Not needed for Phases 0–4.
-- Phase 5 (voice) needs a development build on the iPhone. A free Apple ID works through Xcode
-  ("Personal Team"), but the install expires after a week and must be rebuilt.
-- **Required from Phase 6**: push notification credentials need the paid membership. Also required
-  for TestFlight and the App Store. Buy it at Phase 6 at the latest, or at Phase 5 if weekly
-  rebuilding gets annoying.
+- Not needed for Phases 0–5 (voice messages still run in Expo Go).
+- **Required from Phase 6**: push notifications need a development build and the paid membership
+  for the push credentials. Also required for TestFlight and the App Store. Buy it at Phase 6.
 
 ---
 
@@ -124,20 +123,23 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
   original bubble with the changed words highlighted.
 - **Done when:** all three work inside a chat.
 
-### Phase 5 — Voice calls
-- Switch from Expo Go to a **development build** (`expo-dev-client`), built locally with Xcode
-  onto the iPhone and the Simulator. From here on Expo Go no longer works (LiveKit needs native code).
-- Add LiveKit React Native SDK + Expo config plugins; microphone permission text.
-- Supabase Edge Function mints short-lived LiveKit room tokens. **LiveKit API secret lives only
-  in the Edge Function, never in the app.**
-- Call flow: tap Call in a chat → `call_sessions` row → in-app ring via Realtime → both join an
-  audio-only room. Mute, speaker toggle, hang up, call timer, language-switch timer from Phase 4.
-- Only users with an existing conversation (and no block) can call each other.
-- Report during/after call. Calls are NOT recorded.
-- **Done when:** iPhone on mobile data and Simulator on Wi-Fi hold a 10-minute call.
+### Phase 5 — Voice messages
+- Hold-to-record button in the chat (`expo-audio`), max 60 seconds, with a cancel gesture.
+- Clip uploaded to a **private** `voice` bucket under `userId/…`; only the two participants can
+  read it (storage policy checks conversation membership). Played back inline with a waveform-free
+  simple player: play/pause, duration, progress.
+- New message kind `voice` with `meta.path` and `meta.duration_ms`; chat-list preview "Voice message".
+- Reporting a voice message stores the clip path so a moderator can listen from the dashboard.
+- Account deletion removes the user's clips (the app deletes its `userId/` prefix before the
+  account, as avatars did).
+- Microphone permission text in `app.json`. Still Expo Go: no development build needed yet.
+- **Done when:** iPhone and Simulator exchange voice messages; a reported clip is listed in
+  `reports`; deleting an account removes its clips.
 
-### Phase 6 — Push notifications (buy Apple Developer membership here)
-- Expo push tokens stored per device. Edge Function sends push on new message and incoming call.
+### Phase 6 — Push notifications (buy Apple Developer membership here; switch to a development build)
+- Leave Expo Go: `expo-dev-client` development build installed through Xcode on the iPhone and
+  the Simulator.
+- Expo push tokens stored per device. Edge Function sends push on new message (text or voice).
 - Mute per conversation. Nothing from blocked users.
 - **Done when:** the iPhone buzzes when the Simulator user writes and the app is closed.
 
@@ -160,7 +162,8 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
   (cascade). Alternative: keep messages attributed to "Deleted user". Decide in Phase 7.
 
 ### Later
-- Android release, native call ringing (CallKit), translated UI, more languages, Apple/Google sign-in.
+- Live voice calls (LiveKit) if users ask for them, with native ringing (CallKit).
+- Android release, translated UI, more languages, Apple/Google sign-in.
 
 ---
 
@@ -187,12 +190,11 @@ There is no community yet, and an empty exchange app is useless, so this matters
 - `languages` — code, name (seeded with the 8 launch languages)
 - `user_languages` — user_id, language_code, kind (`native` | `fluent` | `learning`), level (`beginner` | `intermediate` | `advanced`, learning only)
 - `conversations` — id, user_a, user_b, created_at, last_message_at
-- `messages` — id, conversation_id, sender_id, body, kind (text | topic | timer | correction), meta,
-  corrected_from_message_id, created_at
+- `messages` — id, conversation_id, sender_id, body, kind (text | topic | timer | correction | voice),
+  meta (voice: path, duration_ms), corrected_from_message_id, created_at
 - `blocks` — blocker_id, blocked_id
 - `reports` — id, reporter_id, reported_user_id (kept as a snapshot after deletion), message_id?,
-  message_body (copied by the server), call_session_id?, reason, status
-- `call_sessions` — id, conversation_id, started_by, started_at, ended_at, livekit_room
+  message_body (copied by the server), reason, status
 - `push_tokens` — user_id, expo_token, platform
 
 Every table has Row Level Security enabled. Default deny.

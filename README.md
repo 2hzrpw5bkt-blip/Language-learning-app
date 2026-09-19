@@ -1,14 +1,14 @@
 # Language Exchange
 
 A mobile app where two people who each speak the language the other is learning chat by text
-(and, later, by voice) and teach each other. Finnish is the launch focus. See `PLAN.md` for the
+and voice message and teach each other. Finnish is the launch focus. See `PLAN.md` for the
 full plan and phase status, and `CLAUDE.md` for working rules.
 
 ## Stack
 
 - Expo SDK 57 (React Native, TypeScript, Expo Router). App code in `src/`, screens in `src/app/`.
 - Supabase (Postgres, Auth, Realtime). Schema lives in `supabase/migrations/`, applied in order.
-- LiveKit for voice calls (Phase 5, not yet built).
+- Voice messages via expo-audio and Supabase Storage (Phase 5, next up).
 
 ## Run it
 
