@@ -90,6 +90,9 @@ export default function ChatScreen() {
         if (!cancelled) setError(errorMessage(caught));
       });
 
+    // Load straight away, and again each time the live connection (re)joins. mergeMessage
+    // ignores duplicates, so the history never depends on the socket connecting at all.
+    loadRecent();
     const unsubscribe = subscribeToMessages(
       (message) => {
         setMessages((current) => mergeMessage(current, message));

@@ -35,6 +35,13 @@ function RootStack() {
     if (!loading) SplashScreen.hideAsync();
   }, [loading]);
 
+  // Signed in with no profile row at all means the account was deleted elsewhere: sign out
+  // rather than sending the user back through onboarding.
+  const accountGone = !loading && session !== null && !loadFailed && profile === null;
+  useEffect(() => {
+    if (accountGone) supabase.auth.signOut();
+  }, [accountGone]);
+
   if (loading) {
     return (
       <Screen edges={['top', 'bottom']}>
@@ -53,10 +60,7 @@ function RootStack() {
     );
   }
 
-  // Signed in with no profile row at all means the account was deleted elsewhere: sign out
-  // rather than sending the user back through onboarding.
-  if (session && !loadFailed && !profile) {
-    supabase.auth.signOut();
+  if (accountGone) {
     return (
       <Screen edges={['top', 'bottom']}>
         <ActivityIndicator />

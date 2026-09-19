@@ -1,6 +1,6 @@
 // Holds the signed-in session and the user's profile, and hands them to every screen.
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import { fetchLanguages, fetchProfile, touchLastActive, type ProfileData } from '@/lib/profile';
@@ -47,6 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Whether a profile is already on screen. A refresh that fails while one is loaded keeps the
+  // old data instead of tearing the app down into the retry screen.
+  const hasProfile = useRef(false);
+  useEffect(() => {
+    hasProfile.current = profileData.profile !== null;
+  }, [profileData]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -82,8 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     loadProfileData(userId).then(({ failed, ...data }) => {
       if (cancelled) return;
-      setProfileData(data);
-      setLoadFailed(failed);
+      if (failed && hasProfile.current) {
+        console.warn('Profile refresh failed; keeping the loaded profile');
+      } else {
+        setProfileData(data);
+        setLoadFailed(failed);
+      }
       setLoadedFor(userId);
     });
     return () => {
