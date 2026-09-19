@@ -8,5 +8,5 @@ export default function Index() {
   if (!session) return <Redirect href="/sign-in" />;
   if (profile?.is_banned) return <Redirect href="/banned" />;
   if (!profile?.onboarded_at) return <Redirect href="/onboarding" />;
-  return <Redirect href="/home" />;
+  return <Redirect href="/partners" />;
 }

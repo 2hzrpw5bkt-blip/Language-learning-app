@@ -45,6 +45,7 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn && !banned && onboarded}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="partner/[id]" options={{ headerShown: true, headerBackButtonDisplayMode: 'minimal' }} />
         <Stack.Screen
           name="edit-profile"
           options={{ presentation: 'modal', headerShown: true, title: strings.editProfile.title }}

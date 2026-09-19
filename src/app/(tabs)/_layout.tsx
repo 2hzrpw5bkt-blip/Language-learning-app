@@ -8,10 +8,10 @@ export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: colors.primary }}>
       <Tabs.Screen
-        name="home"
+        name="partners"
         options={{
-          title: strings.tabs.home,
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+          title: strings.tabs.partners,
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
