@@ -14,7 +14,7 @@ export type ConversationSummary = {
   muted: boolean;
 };
 
-export type MessageKind = 'text' | 'topic' | 'timer' | 'correction';
+export type MessageKind = 'text' | 'topic' | 'timer' | 'correction' | 'voice';
 
 export type Message = {
   id: number;

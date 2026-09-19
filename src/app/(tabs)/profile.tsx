@@ -32,7 +32,7 @@ export default function ProfileScreen() {
         onPress: async () => {
           setDeleting(true);
           try {
-            await deleteOwnAccount();
+            await deleteOwnAccount(profile.id);
           } catch {
             setDeleting(false);
             Alert.alert(strings.errors.generic);

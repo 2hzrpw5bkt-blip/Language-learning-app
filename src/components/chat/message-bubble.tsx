@@ -3,10 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CorrectionInline } from '@/components/chat/correction-inline';
+import { VoiceBubble } from '@/components/chat/voice-bubble';
 import { strings } from '@/constants/strings';
 import { colors, radius, spacing } from '@/constants/theme';
 import type { Message } from '@/lib/chat';
 import { messageTime } from '@/lib/time';
+import { voiceMeta } from '@/lib/voice-meta';
 
 type Props = {
   message: Message;
@@ -43,6 +45,18 @@ export function MessageBubble({ message, mine, original, correction, onLongPress
         </View>
         <Text style={styles.topicText}>{message.body}</Text>
       </View>
+    );
+  }
+
+  const voice = voiceMeta(message);
+  if (voice) {
+    return (
+      <Pressable onLongPress={onLongPress} style={[styles.row, mine && styles.rowMine]}>
+        <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
+          <VoiceBubble meta={voice} mine={mine} />
+          <Text style={[styles.time, mine && styles.textMineFaded]}>{messageTime(message.created_at)}</Text>
+        </View>
+      </Pressable>
     );
   }
 

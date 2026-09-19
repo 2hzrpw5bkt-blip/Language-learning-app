@@ -6,6 +6,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { CorrectionSheet } from '@/components/chat/correction-sheet';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { TimerBar } from '@/components/chat/timer-bar';
+import { VoiceComposer } from '@/components/chat/voice-composer';
 import { TopicSheet } from '@/components/chat/topic-sheet';
 import { Screen } from '@/components/screen';
 import { ErrorText, Muted } from '@/components/typography';
@@ -30,6 +31,7 @@ import { errorMessage } from '@/lib/errors';
 import { exchangeLanguages, type ExchangeLanguage } from '@/lib/exchange';
 import { fetchPartner, type Partner } from '@/lib/partners';
 import { summarizeTimer, TIMER_MINUTES, type PendingRequest } from '@/lib/timer';
+import { uploadVoiceClip } from '@/lib/voice';
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,6 +57,7 @@ export default function ChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [topicOpen, setTopicOpen] = useState(0);
   const [correcting, setCorrecting] = useState<Message | null>(null);
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,6 +316,18 @@ export default function ChatScreen() {
     );
   };
 
+  const sendVoice = async (localUri: string, durationMs: number) => {
+    setSending(true);
+    setError(null);
+    try {
+      const meta = await uploadVoiceClip(me, id, localUri, durationMs);
+      await deliver(strings.chats.voiceBody, { kind: 'voice', meta: { ...meta } });
+    } catch (caught) {
+      setError(errorMessage(caught));
+      setSending(false);
+    }
+  };
+
   const sendCorrection = async (original: Message, corrected: string) => {
     // Keep the sheet open until the send succeeds, so a failure does not lose the typed text.
     const sent = await deliver(corrected, { kind: 'correction', corrected_from_message_id: original.id });
@@ -449,23 +464,34 @@ export default function ChatScreen() {
         </Pressable>
       </View>
       <View style={styles.composer}>
-        <TextInput
-          style={styles.input}
-          value={text}
-          onChangeText={setText}
-          placeholder={strings.chats.placeholder}
-          placeholderTextColor={colors.muted}
-          multiline
-          maxLength={2000}
-        />
-        <Pressable
-          onPress={send}
-          disabled={!canSend}
-          accessibilityRole="button"
-          accessibilityLabel={strings.chats.send}
-          style={[styles.sendButton, !canSend && styles.sendDisabled]}>
-          <Ionicons name="arrow-up" size={22} color={colors.onPrimary} />
-        </Pressable>
+        {recording ? null : (
+          <TextInput
+            style={styles.input}
+            value={text}
+            onChangeText={setText}
+            placeholder={strings.chats.placeholder}
+            placeholderTextColor={colors.muted}
+            multiline
+            maxLength={2000}
+          />
+        )}
+        {recording || text.trim().length === 0 ? (
+          <VoiceComposer
+            recording={recording}
+            onRecordingChange={setRecording}
+            onSend={sendVoice}
+            disabled={sending}
+          />
+        ) : (
+          <Pressable
+            onPress={send}
+            disabled={!canSend}
+            accessibilityRole="button"
+            accessibilityLabel={strings.chats.send}
+            style={[styles.sendButton, !canSend && styles.sendDisabled]}>
+            <Ionicons name="arrow-up" size={22} color={colors.onPrimary} />
+          </Pressable>
+        )}
       </View>
 
       {/* The key remounts each sheet when opened, so its state starts fresh. */}

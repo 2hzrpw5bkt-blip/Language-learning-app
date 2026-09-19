@@ -124,7 +124,8 @@ One phase = one or more Claude Code sessions. Finish, test on the phone, commit,
 - **Done when:** all three work inside a chat.
 
 ### Phase 5 — Voice messages
-- Hold-to-record button in the chat (`expo-audio`), max 60 seconds, with a cancel gesture.
+- Tap the microphone in the chat to record (`expo-audio`), max 60 seconds; a bar shows the
+  time with Cancel and Send. (Tap rather than hold: works with VoiceOver and in the Simulator.)
 - Clip uploaded to a **private** `voice` bucket under `userId/…`; only the two participants can
   read it (storage policy checks conversation membership). Played back inline with a waveform-free
   simple player: play/pause, duration, progress.

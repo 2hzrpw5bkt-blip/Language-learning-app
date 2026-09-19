@@ -1,5 +1,6 @@
 // All reads and writes for profiles, languages and avatars. Screens call these, never Supabase directly.
 import { supabase } from '@/lib/supabase';
+import { removeVoiceFiles } from '@/lib/voice';
 import type { Language, LearnChoices, Profile, TeachChoices, UserLanguage } from '@/lib/types';
 
 export async function fetchLanguages(): Promise<Language[]> {
@@ -67,9 +68,11 @@ export async function touchLastActive(): Promise<void> {
   await supabase.rpc('touch_last_active');
 }
 
-// Permanently deletes the signed-in user. The SQL function deletes the auth user, which
-// cascades to the profile, languages, conversations and messages.
-export async function deleteOwnAccount(): Promise<void> {
+// Permanently deletes the signed-in user. Voice clips go first through the Storage API (SQL
+// cannot delete storage rows); the SQL function then deletes the auth user, which cascades to
+// the profile, languages, conversations and messages.
+export async function deleteOwnAccount(userId: string): Promise<void> {
+  await removeVoiceFiles(userId);
   const { error } = await supabase.rpc('delete_own_account');
   if (error) throw error;
   await supabase.auth.signOut({ scope: 'local' });

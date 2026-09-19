@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Record voice messages to send to your language partner."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
