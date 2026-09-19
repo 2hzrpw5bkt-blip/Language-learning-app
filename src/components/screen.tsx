@@ -1,4 +1,5 @@
-import { useHeaderHeight } from '@react-navigation/elements';
+// expo-router bundles its own navigation elements; the standalone package is not compatible.
+import { useHeaderHeight } from 'expo-router/build/react-navigation/elements';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
