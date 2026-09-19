@@ -1,6 +1,7 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { Chips, type ChipOption } from '@/components/chips';
 import { PartnerCard } from '@/components/partner-card';
@@ -66,6 +67,15 @@ export default function PartnersScreen() {
   ];
   return (
     <View style={styles.container}>
+      <Tabs.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={refresh} hitSlop={8} accessibilityLabel={strings.partners.refresh} style={styles.headerButton}>
+              <Ionicons name="refresh" size={24} color={colors.primary} />
+            </Pressable>
+          ),
+        }}
+      />
       <FlatList
         data={result?.partners ?? []}
         keyExtractor={(partner) => partner.id}
@@ -73,7 +83,6 @@ export default function PartnersScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Muted>{strings.partners.intro}</Muted>
             <Muted style={styles.filterLabel}>{strings.partners.languageFilterLabel}</Muted>
             <Chips
               options={languageOptions}
@@ -103,6 +112,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.md, gap: spacing.sm },
   header: { gap: spacing.xs, marginBottom: spacing.sm },
-  filterLabel: { marginTop: spacing.sm, fontWeight: '600' },
+  filterLabel: { fontWeight: '600' },
+  headerButton: { paddingHorizontal: spacing.md },
   empty: { textAlign: 'center', color: colors.muted, marginTop: spacing.xl },
 });

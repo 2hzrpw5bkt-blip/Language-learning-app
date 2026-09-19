@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { strings } from '@/constants/strings';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { ChatProvider } from '@/lib/chat-context';
 
 // Keep the splash screen up until we know whether the user is signed in.
 SplashScreen.preventAutoHideAsync();
@@ -11,7 +12,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootStack />
+      <ChatProvider>
+        <RootStack />
+      </ChatProvider>
     </AuthProvider>
   );
 }
@@ -46,6 +49,16 @@ function RootStack() {
       <Stack.Protected guard={signedIn && !banned && onboarded}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="partner/[id]" options={{ headerShown: true, headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="chat/[id]" options={{ headerShown: true, headerBackButtonDisplayMode: 'minimal' }} />
+        <Stack.Screen name="blocked-users" options={{ headerShown: true, title: strings.chats.blockedUsers }} />
+        <Stack.Screen
+          name="welcome"
+          options={{ presentation: 'modal', headerShown: true, title: strings.welcome.title }}
+        />
+        <Stack.Screen
+          name="report"
+          options={{ presentation: 'modal', headerShown: true, title: strings.report.title }}
+        />
         <Stack.Screen
           name="edit-profile"
           options={{ presentation: 'modal', headerShown: true, title: strings.editProfile.title }}

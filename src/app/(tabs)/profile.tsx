@@ -55,6 +55,7 @@ export default function ProfileScreen() {
       <LanguageSummary title={strings.profile.speaks} rows={speaks} languages={languages} />
       <LanguageSummary title={strings.profile.learning} rows={learning} languages={languages} />
       <Button title={strings.profile.edit} onPress={() => router.push('/edit-profile')} />
+      <Button title={strings.chats.blockedUsers} variant="secondary" onPress={() => router.push('/blocked-users')} />
       <Button title={strings.profile.signOut} variant="secondary" onPress={() => supabase.auth.signOut()} />
       <Button
         title={strings.profile.deleteAccount}

@@ -1,6 +1,7 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -8,8 +9,10 @@ import { LanguageSummary } from '@/components/language-summary';
 import { Screen } from '@/components/screen';
 import { Body, ErrorText, Muted, Title } from '@/components/typography';
 import { strings } from '@/constants/strings';
-import { spacing } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { blockUser, startConversation } from '@/lib/chat';
+import { useChats } from '@/lib/chat-context';
 import { errorMessage } from '@/lib/errors';
 import { fetchPartner, type Partner } from '@/lib/partners';
 import { activeLabel } from '@/lib/time';
@@ -27,8 +30,12 @@ async function load(id: string): Promise<State> {
 
 export default function PartnerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { languages } = useAuth();
+  const router = useRouter();
+  const { session, languages } = useAuth();
+  const { reload } = useChats();
+  const me = session?.user.id ?? '';
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,13 +65,65 @@ export default function PartnerScreen() {
   }
 
   const { partner } = state;
+
+  const sayHi = async () => {
+    setStarting(true);
+    try {
+      const conversationId = await startConversation(partner.id);
+      router.push({ pathname: '/chat/[id]', params: { id: conversationId } });
+    } catch (caught) {
+      Alert.alert(strings.chats.startFailed, errorMessage(caught));
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const confirmBlock = () => {
+    Alert.alert(strings.chats.blockTitle(partner.display_name), strings.chats.blockBody, [
+      { text: strings.common.cancel, style: 'cancel' },
+      {
+        text: strings.chats.blockConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await blockUser(me, partner.id);
+            await reload();
+            router.back();
+          } catch (caught) {
+            Alert.alert(errorMessage(caught));
+          }
+        },
+      },
+    ]);
+  };
+
+  const openMenu = () => {
+    Alert.alert(partner.display_name, undefined, [
+      {
+        text: strings.chats.report,
+        onPress: () => router.push({ pathname: '/report', params: { userId: partner.id } }),
+      },
+      { text: strings.chats.block, style: 'destructive', onPress: confirmBlock },
+      { text: strings.common.cancel, style: 'cancel' },
+    ]);
+  };
+
   const rows = partner.languages.map((row) => ({ ...row, user_id: partner.id }));
   const helps = rows.filter((row) => row.kind !== 'learning');
   const practising = rows.filter((row) => row.kind === 'learning');
 
   return (
-    <Screen footer={<Button title={strings.partners.sayHi} onPress={() => Alert.alert(strings.partners.sayHiSoon)} />}>
-      <Stack.Screen options={{ title: partner.display_name }} />
+    <Screen footer={<Button title={strings.partners.sayHi} onPress={sayHi} loading={starting} />}>
+      <Stack.Screen
+        options={{
+          title: partner.display_name,
+          headerRight: () => (
+            <Pressable onPress={openMenu} hitSlop={8} accessibilityLabel={strings.chats.menu}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.primary} />
+            </Pressable>
+          ),
+        }}
+      />
       <View style={styles.header}>
         <Avatar url={partner.avatar_url} name={partner.display_name} />
         <Title>{partner.display_name}</Title>
