@@ -1,49 +1,77 @@
-// Shows the running language-switch timer and warns when it is time to switch.
+// The shared language-switch timer: countdown when running, Accept/Decline when the partner asked.
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { strings } from '@/constants/strings';
 import { colors, radius, spacing } from '@/constants/theme';
-import { formatSeconds, timerState, type TimerMeta } from '@/lib/timer';
+import { formatSeconds, timerPhase, type ActiveTimer, type PendingRequest } from '@/lib/timer';
 
 type Props = {
-  meta: TimerMeta;
+  active: ActiveTimer | null;
+  pending: PendingRequest | null;
+  me: string;
+  partnerName: string;
   languageName: (code: string) => string;
-  onStop: () => void;
+  onAnswer: (request: PendingRequest, accept: boolean) => void;
+  onRequestStop: () => void;
 };
 
-export function TimerBar({ meta, languageName, onStop }: Props) {
+export function TimerBar({ active, pending, me, partnerName, languageName, onAnswer, onRequestStop }: Props) {
   const [now, setNow] = useState(() => Date.now());
-  const state = timerState(meta, now);
-  const previousPhase = useRef(state.phase);
+  const phase = active ? timerPhase(active, now) : null;
+  const previousIndex = useRef(phase?.index ?? 0);
 
   useEffect(() => {
+    if (!active) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [active]);
 
   useEffect(() => {
-    if (previousPhase.current === state.phase) return;
-    if (state.phase === 'second') {
-      Alert.alert(strings.chats.timerSwitchTitle, strings.chats.timerSwitchBody(languageName(state.language)));
-    } else if (state.phase === 'done') {
-      Alert.alert(strings.chats.timerDoneTitle, strings.chats.timerDoneBody);
+    if (!phase) return;
+    if (phase.index !== previousIndex.current) {
+      Alert.alert(strings.chats.timerSwitchTitle, strings.chats.timerSwitchBody(languageName(phase.language)));
     }
-    previousPhase.current = state.phase;
-  }, [state, languageName]);
+    previousIndex.current = phase.index;
+  }, [phase, languageName]);
 
-  if (state.phase === 'done') return null;
+  if (pending) {
+    const mine = pending.sender_id === me;
+    const label =
+      pending.action === 'request'
+        ? mine
+          ? strings.chats.timerWaiting(partnerName)
+          : strings.chats.timerAsked(partnerName)
+        : mine
+          ? strings.chats.timerStopWaiting(partnerName)
+          : strings.chats.timerStopAsked(partnerName);
+    return (
+      <View style={styles.bar}>
+        <Text style={styles.text}>{label}</Text>
+        {!mine ? (
+          <View style={styles.buttons}>
+            <Pressable onPress={() => onAnswer(pending, false)} hitSlop={8}>
+              <Text style={styles.decline}>{strings.chats.timerDecline}</Text>
+            </Pressable>
+            <Pressable onPress={() => onAnswer(pending, true)} hitSlop={8}>
+              <Text style={styles.accept}>{strings.chats.timerAccept}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
 
-  const next = state.phase === 'first' ? meta.second : null;
+  if (!phase) return null;
   return (
     <View style={styles.bar}>
       <View style={styles.text}>
-        <Text style={styles.now}>{strings.chats.timerNow(languageName(state.language))}</Text>
-        {next ? <Text style={styles.then}>{strings.chats.timerThen(languageName(next))}</Text> : null}
+        <Text style={styles.now}>{strings.chats.timerNow(languageName(phase.language))}</Text>
+        <Text style={styles.then}>{strings.chats.timerThen(languageName(phase.next))}</Text>
       </View>
-      <Text style={styles.clock}>{formatSeconds(state.secondsLeft)}</Text>
-      <Pressable onPress={onStop} hitSlop={8}>
-        <Text style={styles.stop}>{strings.chats.timerStop}</Text>
+      <Text style={styles.clock}>{formatSeconds(phase.secondsLeft)}</Text>
+      <Pressable onPress={onRequestStop} hitSlop={8}>
+        <Text style={styles.decline}>{strings.chats.timerStop}</Text>
       </Pressable>
     </View>
   );
@@ -59,9 +87,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
-  text: { flex: 1 },
+  text: { flex: 1, color: colors.text },
+  buttons: { flexDirection: 'row', gap: spacing.md },
+  accept: { color: colors.primary, fontWeight: '700' },
+  decline: { color: colors.danger, fontWeight: '600' },
   now: { fontWeight: '700', color: colors.text },
   then: { fontSize: 12, color: colors.muted },
   clock: { fontVariant: ['tabular-nums'], fontSize: 20, fontWeight: '600', color: colors.primary },
-  stop: { color: colors.danger, fontWeight: '600' },
 });

@@ -1,47 +1,73 @@
-// The language-switch timer lives in the chat as a message of kind 'timer', so both
-// phones count down from the same start time.
+// The language-switch timer is agreed between the two people through messages of kind 'timer':
+//   request -> accept | decline        (start it)
+//   stop_request -> stop | stop_declined (end it)
+// Once accepted it switches language every TIMER_MINUTES until both agree to stop.
 import type { Message } from '@/lib/chat';
 
+export const TIMER_MINUTES = 5;
+
+export type TimerAction = 'request' | 'accept' | 'decline' | 'stop_request' | 'stop' | 'stop_declined';
+
 export type TimerMeta = {
-  first: string;
-  second: string;
-  minutes: number;
-  started_at: string;
-  stopped?: boolean;
+  action: TimerAction;
+  first?: string;
+  second?: string;
+  started_at?: string;
+  requester_name?: string;
 };
 
-export type TimerState =
-  | { phase: 'first' | 'second'; language: string; secondsLeft: number; meta: TimerMeta }
-  | { phase: 'done'; meta: TimerMeta };
+export type ActiveTimer = { first: string; second: string; started_at: string };
+
+export type PendingRequest = {
+  action: 'request' | 'stop_request';
+  sender_id: string;
+  message: Message;
+  meta: TimerMeta;
+};
+
+export type TimerSummary = { active: ActiveTimer | null; pending: PendingRequest | null };
 
 export function timerMeta(message: Message): TimerMeta | null {
   if (message.kind !== 'timer' || !message.meta) return null;
   const meta = message.meta as Partial<TimerMeta>;
-  if (typeof meta.first !== 'string' || typeof meta.second !== 'string' || typeof meta.minutes !== 'number' || typeof meta.started_at !== 'string') {
-    return null;
-  }
-  return meta as TimerMeta;
+  return typeof meta.action === 'string' ? (meta as TimerMeta) : null;
 }
 
-// Newest timer message decides; a stopped or finished timer shows nothing.
-export function latestTimer(messages: Message[]): TimerMeta | null {
+// messages are newest first.
+export function summarizeTimer(messages: Message[]): TimerSummary {
+  let pending: PendingRequest | null = null;
+  let first = true;
   for (const message of messages) {
     const meta = timerMeta(message);
-    if (meta) return meta.stopped ? null : meta;
+    if (!meta) continue;
+    if (first) {
+      first = false;
+      if (meta.action === 'request' || meta.action === 'stop_request') {
+        pending = { action: meta.action, sender_id: message.sender_id, message, meta };
+        continue;
+      }
+    }
+    if (meta.action === 'stop') return { active: null, pending };
+    if (meta.action === 'accept' && meta.first && meta.second && meta.started_at) {
+      return { active: { first: meta.first, second: meta.second, started_at: meta.started_at }, pending };
+    }
   }
-  return null;
+  return { active: null, pending };
 }
 
-export function timerState(meta: TimerMeta, now: number = Date.now()): TimerState {
-  const elapsed = Math.floor((now - new Date(meta.started_at).getTime()) / 1000);
-  const phaseSeconds = meta.minutes * 60;
-  if (elapsed < phaseSeconds) {
-    return { phase: 'first', language: meta.first, secondsLeft: phaseSeconds - elapsed, meta };
-  }
-  if (elapsed < phaseSeconds * 2) {
-    return { phase: 'second', language: meta.second, secondsLeft: phaseSeconds * 2 - elapsed, meta };
-  }
-  return { phase: 'done', meta };
+export type TimerPhase = { language: string; next: string; secondsLeft: number; index: number };
+
+export function timerPhase(active: ActiveTimer, now: number = Date.now()): TimerPhase {
+  const elapsed = Math.max(0, Math.floor((now - new Date(active.started_at).getTime()) / 1000));
+  const phaseSeconds = TIMER_MINUTES * 60;
+  const index = Math.floor(elapsed / phaseSeconds);
+  const even = index % 2 === 0;
+  return {
+    language: even ? active.first : active.second,
+    next: even ? active.second : active.first,
+    secondsLeft: phaseSeconds - (elapsed % phaseSeconds),
+    index,
+  };
 }
 
 export function formatSeconds(total: number): string {

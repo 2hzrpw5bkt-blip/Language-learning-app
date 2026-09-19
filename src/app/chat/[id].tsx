@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CorrectionSheet } from '@/components/chat/correction-sheet';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { TimerBar } from '@/components/chat/timer-bar';
-import { TimerSheet } from '@/components/chat/timer-sheet';
 import { TopicSheet } from '@/components/chat/topic-sheet';
 import { Screen } from '@/components/screen';
 import { ErrorText, Muted } from '@/components/typography';
@@ -28,7 +27,7 @@ import { useChats } from '@/lib/chat-context';
 import { errorMessage } from '@/lib/errors';
 import { exchangeLanguages, type ExchangeLanguage } from '@/lib/exchange';
 import { fetchPartner, type Partner } from '@/lib/partners';
-import { latestTimer, type TimerMeta } from '@/lib/timer';
+import { summarizeTimer, TIMER_MINUTES, type PendingRequest } from '@/lib/timer';
 
 function addMessage(list: Message[], message: Message): Message[] {
   return list.some((item) => item.id === message.id) ? list : [message, ...list];
@@ -49,7 +48,6 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [topicOpen, setTopicOpen] = useState(0);
-  const [timerOpen, setTimerOpen] = useState(0);
   const [correcting, setCorrecting] = useState<Message | null>(null);
 
   useEffect(() => {
@@ -93,8 +91,9 @@ export default function ChatScreen() {
       { id: partnerDetails.id, name: partnerDetails.display_name, languages: partnerDetails.languages },
     );
   }, [profile, userLanguages, partnerDetails]);
-  const exchangeCodes = useMemo(() => [...new Set(exchange.map((item) => item.code))], [exchange]);
-  const timer = latestTimer(messages);
+  const timer = useMemo(() => summarizeTimer(messages), [messages]);
+  const myName = profile?.display_name ?? '';
+  const partnerName = partner?.display_name ?? '';
 
   const deliver = async (body: string, extras: MessageExtras = {}) => {
     setSending(true);
@@ -133,17 +132,118 @@ export default function ChatScreen() {
     });
   };
 
-  const startTimer = async (meta: TimerMeta) => {
-    setTimerOpen(0);
-    await deliver(strings.chats.timerStarted(languageName(meta.first), languageName(meta.second), meta.minutes), {
-      kind: 'timer',
-      meta: { ...meta },
-    });
+  // Which language goes first: the one the requester is practising.
+  const timerLanguages = (requesterId: string): { first: string; second: string } | null => {
+    const codes = [...new Set(exchange.map((item) => item.code))];
+    if (codes.length === 0) return null;
+    const mine = exchange.find((item) => item.learnerId === requesterId)?.code ?? codes[0];
+    const other = codes.find((code) => code !== mine) ?? mine;
+    return { first: mine, second: other };
   };
 
-  const stopTimer = async () => {
-    if (!timer) return;
-    await deliver(strings.chats.timerStopped, { kind: 'timer', meta: { ...timer, stopped: true } });
+  const answerRequest = async (request: PendingRequest, accept: boolean) => {
+    if (request.action === 'request') {
+      const first = request.meta.first ?? '';
+      const second = request.meta.second ?? '';
+      if (accept) {
+        await deliver(strings.chats.timerStarted(TIMER_MINUTES, languageName(first)), {
+          kind: 'timer',
+          meta: { action: 'accept', first, second, started_at: new Date().toISOString() },
+        });
+      } else {
+        await deliver(strings.chats.timerDeclined(myName), { kind: 'timer', meta: { action: 'decline' } });
+      }
+      return;
+    }
+    if (accept) {
+      await deliver(strings.chats.timerStopped, { kind: 'timer', meta: { action: 'stop' } });
+    } else {
+      await deliver(strings.chats.timerKept(myName), { kind: 'timer', meta: { action: 'stop_declined' } });
+    }
+  };
+
+  // Popup when the partner asks to start or stop the timer.
+  const askAboutRequest = (request: PendingRequest) => {
+    const name = request.meta.requester_name ?? partnerName;
+    if (request.action === 'request') {
+      Alert.alert(
+        strings.chats.timerAskedTitle(name),
+        strings.chats.timerAskedBody(
+          TIMER_MINUTES,
+          languageName(request.meta.first ?? ''),
+          languageName(request.meta.second ?? ''),
+        ),
+        [
+          { text: strings.chats.timerDecline, style: 'cancel', onPress: () => answerRequest(request, false) },
+          { text: strings.chats.timerAccept, onPress: () => answerRequest(request, true) },
+        ],
+      );
+    } else {
+      Alert.alert(strings.chats.timerStopAskedTitle(name), strings.chats.timerStopAskedBody, [
+        { text: strings.chats.timerDecline, style: 'cancel', onPress: () => answerRequest(request, false) },
+        { text: strings.chats.timerAccept, onPress: () => answerRequest(request, true) },
+      ]);
+    }
+  };
+
+  // Show the popup once per incoming request (also covers a request that arrived while away).
+  const askedFor = useRef<number | null>(null);
+  const askRef = useRef(askAboutRequest);
+  useEffect(() => {
+    askRef.current = askAboutRequest;
+  });
+  useEffect(() => {
+    const request = timer.pending;
+    if (!request || request.sender_id === me || askedFor.current === request.message.id) return;
+    askedFor.current = request.message.id;
+    askRef.current(request);
+  }, [timer.pending, me]);
+
+  const requestStop = () => {
+    Alert.alert(strings.chats.timerExplainTitle, strings.chats.timerStopExplain(partnerName), [
+      { text: strings.common.cancel, style: 'cancel' },
+      {
+        text: strings.chats.timerStopSend,
+        onPress: () =>
+          deliver(strings.chats.timerStopRequestBody(myName), {
+            kind: 'timer',
+            meta: { action: 'stop_request', requester_name: myName },
+          }),
+      },
+    ]);
+  };
+
+  const pressTimer = () => {
+    if (timer.pending) {
+      if (timer.pending.sender_id !== me) askAboutRequest(timer.pending);
+      else Alert.alert(strings.chats.timerExplainTitle, strings.chats.timerPending);
+      return;
+    }
+    if (timer.active) {
+      requestStop();
+      return;
+    }
+    const languagesForTimer = timerLanguages(me);
+    if (!languagesForTimer) {
+      Alert.alert(strings.chats.timerExplainTitle, strings.chats.topicNoLanguages);
+      return;
+    }
+    const { first, second } = languagesForTimer;
+    Alert.alert(
+      strings.chats.timerExplainTitle,
+      strings.chats.timerExplain(TIMER_MINUTES, languageName(first), languageName(second), partnerName),
+      [
+        { text: strings.common.cancel, style: 'cancel' },
+        {
+          text: strings.chats.timerSend,
+          onPress: () =>
+            deliver(strings.chats.timerRequestBody(myName, TIMER_MINUTES), {
+              kind: 'timer',
+              meta: { action: 'request', first, second, requester_name: myName },
+            }),
+        },
+      ],
+    );
   };
 
   const sendCorrection = async (original: Message, corrected: string) => {
@@ -218,7 +318,17 @@ export default function ChatScreen() {
           ),
         }}
       />
-      {timer ? <TimerBar meta={timer} languageName={languageName} onStop={stopTimer} /> : null}
+      {timer.active || timer.pending ? (
+        <TimerBar
+          active={timer.active}
+          pending={timer.pending}
+          me={me}
+          partnerName={partnerName}
+          languageName={languageName}
+          onAnswer={answerRequest}
+          onRequestStop={requestStop}
+        />
+      ) : null}
       <FlatList
         style={styles.list}
         data={messages}
@@ -245,7 +355,7 @@ export default function ChatScreen() {
           <Ionicons name="bulb-outline" size={18} color={colors.primary} />
           <Text style={styles.toolText}>{strings.chats.topicButton}</Text>
         </Pressable>
-        <Pressable onPress={() => setTimerOpen((n) => n + 1)} style={styles.tool} accessibilityRole="button">
+        <Pressable onPress={pressTimer} style={styles.tool} accessibilityRole="button">
           <Ionicons name="timer-outline" size={18} color={colors.primary} />
           <Text style={styles.toolText}>{strings.chats.timerButton}</Text>
         </Pressable>
@@ -278,14 +388,6 @@ export default function ChatScreen() {
         options={exchange}
         languageName={languageName}
         onSend={sendTopic}
-      />
-      <TimerSheet
-        key={`timer-${timerOpen}`}
-        visible={timerOpen > 0}
-        onClose={() => setTimerOpen(0)}
-        codes={exchangeCodes}
-        languageName={languageName}
-        onStart={startTimer}
       />
       <CorrectionSheet
         key={`correction-${correcting?.id ?? 'none'}`}
