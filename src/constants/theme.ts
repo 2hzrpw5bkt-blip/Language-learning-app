@@ -8,6 +8,8 @@ export const colors = {
   muted: '#6B7280',
   danger: '#B00020',
   success: '#1B7F3B',
+  correction: '#B4530A',
+  correctionHighlight: '#FFF1E0',
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const;

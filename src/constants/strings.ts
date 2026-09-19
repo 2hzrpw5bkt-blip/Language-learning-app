@@ -73,8 +73,12 @@ export const strings = {
         body: 'Open a profile and tap Say hi. Chat by text now, and by voice in a later update.',
       },
       {
+        title: 'Correct each other',
+        body: 'Long-press a message from your partner and tap Correct. Your fix appears under their message with the changed words highlighted. Be kind, and ask for corrections too.',
+      },
+      {
         title: 'Share the time',
-        body: 'Spend half the time in your language and half in theirs. Correct each other kindly.',
+        body: 'The Timer button in a chat switches languages every 5 minutes once you both accept, and the Topic button gives you something to talk about.',
       },
       {
         title: 'Stay safe',
@@ -88,6 +92,7 @@ export const strings = {
     empty: 'No chats yet. Find a partner and say hi!',
     loadError: 'Could not load chats.',
     noMessages: 'Say hi to start the conversation.',
+    correctionTip: 'Tip: long-press a message from your partner to correct it. The fix shows up under their message with the changes highlighted.',
     placeholder: 'Write a message…',
     send: 'Send',
     menu: 'Options',
@@ -107,6 +112,8 @@ export const strings = {
     correctionTitle: 'Suggest a correction',
     correctionHelp: 'Edit the message so it sounds right, then send. Be kind: explain in the chat if it helps.',
     correctionLabel: 'Correction',
+    correctionBy: (name: string) => `Correction by ${name}`,
+    you: 'you',
     correctionOriginal: 'Original',
     sendCorrection: 'Send correction',
     correctionUnchanged: 'Change something first.',

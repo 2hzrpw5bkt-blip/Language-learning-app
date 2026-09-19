@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CorrectionInline } from '@/components/chat/correction-inline';
 import { strings } from '@/constants/strings';
 import { colors, radius, spacing } from '@/constants/theme';
 import type { Message } from '@/lib/chat';
@@ -10,12 +11,14 @@ import { messageTime } from '@/lib/time';
 type Props = {
   message: Message;
   mine: boolean;
-  // For corrections: the message being corrected, if we have it.
+  // For corrections shown standalone (original not loaded): the message being corrected.
   original?: Message;
+  // A correction of this message, shown inside the bubble.
+  correction?: { corrected: string; byName: string };
   onLongPress?: () => void;
 };
 
-export function MessageBubble({ message, mine, original, onLongPress }: Props) {
+export function MessageBubble({ message, mine, original, correction, onLongPress }: Props) {
   if (message.kind === 'timer') {
     return (
       <View style={styles.system}>
@@ -43,20 +46,23 @@ export function MessageBubble({ message, mine, original, onLongPress }: Props) {
     );
   }
 
-  const correction = message.kind === 'correction';
+  const isCorrection = message.kind === 'correction';
   return (
     <Pressable onLongPress={onLongPress} style={[styles.row, mine && styles.rowMine]}>
       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-        {correction ? (
+        {isCorrection ? (
           <View style={styles.correctionHeader}>
             <Ionicons name="pencil-outline" size={14} color={mine ? colors.onPrimary : colors.primary} />
             <Text style={[styles.correctionLabel, mine && styles.textMine]}>{strings.chats.correctionLabel}</Text>
           </View>
         ) : null}
-        {correction && original ? (
+        {isCorrection && original ? (
           <Text style={[styles.originalText, mine && styles.textMineFaded]}>{original.body}</Text>
         ) : null}
         <Text style={[styles.text, mine && styles.textMine]}>{message.body}</Text>
+        {correction ? (
+          <CorrectionInline original={message.body} corrected={correction.corrected} byName={correction.byName} />
+        ) : null}
         <Text style={[styles.time, mine && styles.textMineFaded]}>{messageTime(message.created_at)}</Text>
       </View>
     </Pressable>

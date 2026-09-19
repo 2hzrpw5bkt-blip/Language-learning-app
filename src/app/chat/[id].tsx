@@ -92,6 +92,23 @@ export default function ChatScreen() {
     );
   }, [profile, userLanguages, partnerDetails]);
   const timer = useMemo(() => summarizeTimer(messages), [messages]);
+
+  // Corrections are shown inside the message they correct, so they leave the list.
+  const { visibleMessages, correctionsByOriginal } = useMemo(() => {
+    const byOriginal = new Map<number, Message>();
+    const ids = new Set(messages.map((item) => item.id));
+    for (const item of messages) {
+      if (item.kind === 'correction' && item.corrected_from_message_id && ids.has(item.corrected_from_message_id)) {
+        const existing = byOriginal.get(item.corrected_from_message_id);
+        if (!existing || existing.id < item.id) byOriginal.set(item.corrected_from_message_id, item);
+      }
+    }
+    const attached = new Set([...byOriginal.values()].map((item) => item.id));
+    return {
+      visibleMessages: messages.filter((item) => !attached.has(item.id)),
+      correctionsByOriginal: byOriginal,
+    };
+  }, [messages]);
   const myName = profile?.display_name ?? '';
   const partnerName = partner?.display_name ?? '';
 
@@ -331,23 +348,41 @@ export default function ChatScreen() {
       ) : null}
       <FlatList
         style={styles.list}
-        data={messages}
+        data={visibleMessages}
         inverted
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={loaded ? <Muted style={styles.empty}>{strings.chats.noMessages}</Muted> : null}
-        renderItem={({ item }) => (
-          <MessageBubble
-            message={item}
-            mine={item.sender_id === me}
-            original={
-              item.corrected_from_message_id
-                ? messages.find((candidate) => candidate.id === item.corrected_from_message_id)
-                : undefined
-            }
-            onLongPress={() => messageOptions(item)}
-          />
-        )}
+        ListEmptyComponent={
+          loaded ? (
+            <View style={styles.empty}>
+              <Muted style={styles.emptyText}>{strings.chats.noMessages}</Muted>
+              <Muted style={styles.emptyText}>{strings.chats.correctionTip}</Muted>
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => {
+          const attachedCorrection = correctionsByOriginal.get(item.id);
+          return (
+            <MessageBubble
+              message={item}
+              mine={item.sender_id === me}
+              original={
+                item.corrected_from_message_id
+                  ? messages.find((candidate) => candidate.id === item.corrected_from_message_id)
+                  : undefined
+              }
+              correction={
+                attachedCorrection
+                  ? {
+                      corrected: attachedCorrection.body,
+                      byName: attachedCorrection.sender_id === me ? strings.chats.you : partnerName,
+                    }
+                  : undefined
+              }
+              onLongPress={() => messageOptions(item)}
+            />
+          );
+        }}
       />
       <ErrorText message={error} />
       <View style={styles.tools}>
@@ -402,7 +437,8 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   list: { flex: 1, marginHorizontal: -spacing.md },
   listContent: { paddingHorizontal: spacing.md, gap: spacing.sm },
-  empty: { textAlign: 'center', transform: [{ scaleY: -1 }] },
+  empty: { transform: [{ scaleY: -1 }], gap: spacing.sm, paddingVertical: spacing.lg },
+  emptyText: { textAlign: 'center' },
   tools: { flexDirection: 'row', gap: spacing.sm },
   tool: {
     flexDirection: 'row',
