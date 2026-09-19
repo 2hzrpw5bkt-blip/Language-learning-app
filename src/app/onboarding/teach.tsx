@@ -27,13 +27,14 @@ export default function TeachStep() {
     setError(null);
     setBusy(true);
     try {
+      // Languages first: only mark onboarding done once everything else is saved.
+      await saveUserLanguages(session.user.id, draft.teach, draft.learn);
       await saveProfile(session.user.id, {
         display_name: draft.name.trim(),
         bio: draft.bio.trim(),
         timezone: deviceTimezone(),
         onboarded_at: new Date().toISOString(),
       });
-      await saveUserLanguages(session.user.id, draft.teach, draft.learn);
       // The profile now has onboarded_at, so the root layout switches to the main app.
       await refreshProfile();
     } catch (caught) {
